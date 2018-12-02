@@ -63,7 +63,7 @@ best_params = {
     'boosting_type': 'gbdt',
     'n_jobs': -1,
     'max_depth': 7,
-    'n_estimators': 500,
+    'n_estimators': 2000,  # avoid updating
     'subsample_freq': 2,
     'subsample_for_bin': 5000,
     'min_data_per_group': 100,

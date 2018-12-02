@@ -8,10 +8,13 @@ https://www.kaggle.com/iprapas/ideas-from-kernels-and-discussion-lb-1-135
 #
 """
 
-import gc;
+import gc
+import glob
 import sys
 import time
 from datetime import datetime as dt
+
+import os
 
 from plasticc.constants import OBJECT_ID
 
@@ -198,23 +201,19 @@ def lgbm_multi_weighted_logloss(y_true, y_preds):
     return 'wloss', loss, False
 
 
-def save_importances(imp_df):
-    mean_gain = imp_df[['gain', 'feature']].groupby('feature').mean()
-    imp_df['mean_gain'] = imp_df['feature'].map(mean_gain['gain'])
-    return imp_df
-
-
 def agg_importances(imp_df):
     return (imp_df.groupby('feature').gain.agg([np.mean, np.std, len])
             .add_suffix('_gain').sort_values(by='mean_gain', ascending=False)).round()
 
 ILLEGAL_FNAMES = ['target', OBJECT_ID, 'hostgal_specz',
-                  'gal_b', 'gal_l', 'ra', 'ddf', 'decl']
+                  'gal_b', 'gal_l', 'ra', 'ddf', 'decl', #'distmod'
+                  ]
 
 
 def lgbm_modeling_cross_validation(params, full_train, y, classes, class_weights, nr_fold=5,
                                    random_state=1):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
+    #assert 'distmod' in full_train.columns
     # Compute weights
     w = y.value_counts()
     weights = {i: np.sum(w) / w[i] for i in w.index}
@@ -252,8 +251,8 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes, class_weights
 
     score = multi_weighted_logloss(y_true=y, y_preds=oof_preds,
                                    classes=classes, class_weights=class_weights)
-    print(f'OOFMWLL: {score:.4f} n_folds={nr_fold}, nfeatures={full_train.shape[1]}')
-    df_importances = save_importances(imp_df=importances)
+    print(f'OOF:{score:.4f} n_folds={nr_fold}, nfeatures={full_train.shape[1]}')
+    df_importances = agg_importances(importances)
     return clfs, score, df_importances, oof_preds
 
 
@@ -298,8 +297,6 @@ def avg_predict_proba(clfs, X_test):
 
 CHUNKSIZE = 5000000
 
-import os
-import glob
 
 
 class AbstractFeatureAdder:
@@ -310,25 +307,35 @@ class AbstractFeatureAdder:
     @staticmethod
     def add_features(raw_df, feat_df):
         """Make feat_df look like whatever clfs were trained on"""
+        acor_params = {'partial_autocorrelation': [{'lag': 1}, ]}
         # raise NotImplementedError()
         return feat_df  # placeholder
 
-    def predict(self, clfs, save_path, raw_chunks_pat='chunked_test_df/*.mp'):
+    @staticmethod
+    def predict(feature_add_fn, clfs, fnames, save_path, raw_chunks_pat='chunked_test_df/*.mp'):
         paths = list(glob.glob(raw_chunks_pat))
-        for i, pth in tqdm_notebook(sorted(paths)):
-            i_c = os.path.basename(pth)[:-3]  # could just use i?
+        for pth in tqdm_notebook(sorted(paths)):
+            i_c = os.path.basename(pth)[:-3]
             feat_cache_path = f'{feat_dir}/{i_c}.mp'
             df = pd.read_msgpack(pth)
-            feats = pd.read_msgpack(feat_cache_path)
-            test_feat_df = self.add_features(df, feats)
-            preds_df = make_pred_df(clfs, self.fnames, test_feat_df)
-            if i_c == 0:
-                preds_df.to_csv(save_path, header=True, mode='a', index=False)
+            feats = pd.read_msgpack(feat_cache_path).replace(0, np.nan)
+            test_feat_df = feature_add_fn(df, feats)
+            preds_df = make_pred_df(clfs, fnames, test_feat_df)
+            if not os.path.exists(save_path):
+                preds_df.to_csv(save_path, index=False)
             else:
                 preds_df.to_csv(save_path, header=False, mode='a', index=False)
             del preds_df
             gc.collect()
 
+
+def add_acor_feat(mock_tr, feat_df):
+    acor_params = {'partial_autocorrelation': [{'lag': 1}, ]}
+    X = extract_features(mock_tr, default_fc_parameters=acor_params,
+                         column_id=OBJECT_ID, profile=True,
+                         column_sort='mjd',
+                         column_value='flux', disable_progressbar=True).rename_axis(OBJECT_ID)
+    return feat_df.join(X)
 
 def process_test(clfs, features, featurize_configs, train_mean,
                  feat_dir=None, filename='predictions.csv', chunksize=CHUNKSIZE):
@@ -439,7 +446,6 @@ def main(argc, argv):
                         nr_fold=5,
                         random_state=1)
 
-    best_params.update({'n_estimators': 1500})
 
     # modeling from CV
     clfs, score, importance_df, _ = eval_func(best_params)

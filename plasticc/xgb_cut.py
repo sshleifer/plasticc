@@ -4,7 +4,7 @@ from functools import partial
 from sklearn.model_selection import StratifiedKFold
 from xgboost import XGBClassifier
 
-from plasticc.forked_lgbm_script import multi_weighted_logloss, save_importances
+from plasticc.forked_lgbm_script import multi_weighted_logloss
 
 
 def xgb_multi_weighted_logloss(y_predicted, y_true, classes, class_weights):
@@ -65,3 +65,9 @@ def xgb_modeling_cross_validation(params, full_train, y, classes, class_weights,
     df_importances.to_csv('xgb_importances.csv', index=False)
 
     return clfs, score
+
+
+def save_importances(imp_df):
+    mean_gain = imp_df[['gain', 'feature']].groupby('feature').mean()
+    imp_df['mean_gain'] = imp_df['feature'].map(mean_gain['gain'])
+    return imp_df
