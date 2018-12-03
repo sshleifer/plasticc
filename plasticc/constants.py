@@ -1,6 +1,6 @@
 from pathlib import Path
-import numpy as np
 
+import numpy as np
 
 TEST_SET_SIZE = 453653104  # 453M roughly
 SUB_SIZE = 3492890  # 3.5m
@@ -22,8 +22,48 @@ aggs = {
     'flux': ['min', 'max', 'mean', 'median', 'std', 'skew'],
     'flux_err': ['min', 'max', 'mean', 'median', 'std', 'skew'],
     'detected': ['mean'],
-    'flux_ratio_sq': ['sum', 'skew'], # no sort
+    'flux_ratio_sq': ['sum', 'skew'],  # no sort
     'flux_by_flux_ratio_sq': ['sum', 'skew'],
+}
+
+fcp_improved = {
+    '4': {'fft_aggregated': [{'aggtype': 'kurtosis'}],
+          'cid_ce': [{'normalize': True}],
+          'binned_entropy': [{'max_bins': 10}]},
+    '2': {'cid_ce': [{'normalize': True}],
+          'fft_aggregated': [{'aggtype': 'skew'}, {'aggtype': 'kurtosis'}],
+          'median': None,
+          'binned_entropy': [{'max_bins': 10}],
+          'partial_autocorrelation': [{'lag': 1}]},
+    '1': {'quantile': [{'q': 0.7}], 'fft_aggregated': [{'aggtype': 'skew'}]},
+    '0': {'quantile': [{'q': 0.9}], 'cid_ce': [{'normalize': True}]},
+    '5': {'autocorrelation': [{'lag': 1}],
+          'fft_aggregated': [{'aggtype': 'kurtosis'}]}
+}
+
+fcp_improved = {
+    '4': {'fft_aggregated': [{'aggtype': 'kurtosis'}],
+          'cid_ce': [{'normalize': True}],
+          'binned_entropy': [{'max_bins': 10}]},
+    '2': {'cid_ce': [{'normalize': True}],
+          'fft_aggregated': [{'aggtype': 'skew'}, {'aggtype': 'kurtosis'}],
+          'median': None,
+          'binned_entropy': [{'max_bins': 10}],
+          'partial_autocorrelation': [{'lag': 1}]},
+    '1': {'quantile': [{'q': 0.7}], 'fft_aggregated': [{'aggtype': 'skew'}]},
+    '0': {'quantile': [{'q': 0.9}], 'cid_ce': [{'normalize': True}]},
+    '5': {'autocorrelation': [{'lag': 1}],
+          'fft_aggregated': [{'aggtype': 'kurtosis'}]}
+}
+
+fcp_improved2 = {
+    'fft_aggregated': [{'aggtype': 'kurtosis'}, {'aggtype': 'skew'}],
+    'cid_ce': [{'normalize': True}],
+    'binned_entropy': [{'max_bins': 10}],
+    'median': None,
+    'partial_autocorrelation': [{'lag': 1}],
+    'quantile': [{'q': 0.7}, {'q': 0.9}],
+    'autocorrelation': [{'lag': 1}],
 }
 
 fcp = {  #
