@@ -1,0 +1,13 @@
+*.csv
+.yaml
+*.xlsx
+*.mp
+*.pkl
+.DS_Store
+.idea
+.ipynb_checkpoints/
+.zip
+*.ipynb
+*.mp
+*.zip
+*.txt

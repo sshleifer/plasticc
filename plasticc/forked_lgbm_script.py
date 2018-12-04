@@ -34,7 +34,7 @@ from lightgbm import LGBMClassifier
 from tqdm import *
 from numba import jit
 
-from .constants import DATA_DIR, DTYPES, aggs, fcp, best_params, TEST_SET_SIZE
+from .constants import DATA_DIR, DTYPES, aggs, fcp, LGB_PARAMS, TEST_SET_SIZE
 
 
 @jit
@@ -255,6 +255,46 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes, class_weights
     df_importances = agg_importances(importances)
     return clfs, score, df_importances, oof_preds
 
+from sklearn.metrics import log_loss
+
+def binary_lgbm_oof(params, xdf, y, nr_fold=3, random_state=1):
+    xdf = xdf.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
+    #assert 'distmod' in xdf.columns
+    # Compute weights
+    w = y.value_counts()
+    weights = {i: np.sum(w) / w[i] for i in w.index}
+
+    clfs = []
+    folds = StratifiedKFold(n_splits=nr_fold,
+                            shuffle=True,
+                            random_state=random_state)
+    oof_preds = np.zeros((len(xdf), np.unique(y).shape[0]))
+    for fold_, (trn_, val_) in tqdm_notebook(enumerate(folds.split(y, y)), total=nr_fold):
+        trn_x, trn_y = xdf.iloc[trn_], y.iloc[trn_]
+        val_x, val_y = xdf.iloc[val_], y.iloc[val_]
+
+        clf = LGBMClassifier(**params)
+        clf.fit(
+            trn_x, trn_y,
+            eval_set=[(trn_x, trn_y), (val_x, val_y)],
+            verbose=-1,
+            early_stopping_rounds=50,
+            sample_weight=trn_y.map(weights)
+        )
+        oof_preds[val_, :] = clf.predict_proba(val_x, num_iteration=clf.best_iteration_)
+        clfs.append(clf)
+    score = log_loss(y, oof_preds[:,1])
+    return clfs, score, oof_preds
+
+def binary_lgbm(params, xdf, y, nr_fold=3, random_state=1):
+    ret = []
+    for class_num in tqdm_notebook(set(y)):
+        targ = (y == class_num)
+        ret.append(binary_lgbm(LGB_PARAMS, xdf, targ, nr_fold=nr_fold, random_state=random_state))
+    return ret
+
+
+
 
 def predict_chunk(df, clfs, meta_, fnames, featurize_configs, train_mean,
                   feat_cache_path=None):
@@ -448,7 +488,7 @@ def main(argc, argv):
 
 
     # modeling from CV
-    clfs, score, importance_df, _ = eval_func(best_params)
+    clfs, score, importance_df, _ = eval_func(LGB_PARAMS)
     date_str = dt.now().strftime('%Y-%m-%d-%H-%M')
     imp_save_path = f'subm_{score:.6f}_{date_str}.mp'
     importance_df.to_msgpack(imp_save_path)

@@ -5,6 +5,11 @@ import numpy as np
 TEST_SET_SIZE = 453653104  # 453M roughly
 SUB_SIZE = 3492890  # 3.5m
 
+TRAIN_SET_SHAPE = 1421705
+
+FLUX_RATIO_PREFIX = 'flux_by_flux_ratio_sq'
+
+
 GALACTIC_CLASSES = (6, 16, 53, 65, 92)
 # docs say 3492890
 DTYPES = {
@@ -98,6 +103,49 @@ fcp = {  #
 }
 import tsfresh
 
+SMALLER_RATIO_FEATS = {
+    'linear_trend': [{'attr': 'stderr'}],
+    'quantile': [
+        {'q': 0.8},
+        {'q': 0.7},
+        {'q': 0.1},
+        {'q': 0.6},
+    ],
+    'change_quantiles': [
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.4, 'ql': 0.0},
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.6, 'ql': 0.0},
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.6, 'ql': 0.2},
+        {'f_agg': 'var', 'isabs': True, 'qh': 0.2, 'ql': 0.0}],
+    'minimum': None,
+    'skewness': None,
+    'median': None
+}
+
+HANDFIXED_RATIO_FEATS = {
+    'c3': [{'lag': 1}],
+    'change_quantiles': [
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.8, 'ql': 0.2},
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.4, 'ql': 0.0},
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.6, 'ql': 0.0},
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.2, 'ql': 0.0},
+        {'f_agg': 'mean', 'isabs': True, 'qh': 0.6, 'ql': 0.2},
+        {'f_agg': 'var', 'isabs': False, 'qh': 0.2, 'ql': 0.0},
+        {'f_agg': 'var', 'isabs': True, 'qh': 0.2, 'ql': 0.0}
+    ],
+    'linear_trend': [{'attr': 'stderr'}],
+    'quantile': [
+        {'q': 0.8},
+        {'q': 0.9},
+        {'q': 0.6},
+        {'q': 0.7},
+        {'q': 0.1},
+        {'q': 0.4}, ],
+    'minimum': None,
+    'skewness': None,
+    'agg_linear_trend': [{'f_agg': 'min', 'chunk_len': 5, 'attr': 'stderr'}],
+    'median': None,
+    'fft_aggregated': [{'aggtype': 'kurtosis'}]
+}
 _useful_flux_features = [
     'flux__ar_coefficient__k_10__coeff_4',
     'flux__augmented_dickey_fuller__attr_"pvalue"',
@@ -131,7 +179,7 @@ _useful_flux_features = [
 ]
 EXTRA_FLUX_PARS = tsfresh.feature_extraction.settings.from_columns(
 _useful_flux_features)['flux']  # very expensive
-best_params = {
+LGB_PARAMS = {
     'device': 'cpu',
     'objective': 'multiclass',
     'num_class': 14,
@@ -165,37 +213,4 @@ best_params = {
     'subsample': 0.75
 }
 
-# DART_KERNEL_PARAMS = {
-#     'device': 'cpu',
-#     'objective': 'multiclass',
-#     'num_class': 14,
-#     'boosting_type': 'gbdt',
-#     'n_jobs': -1,
-#     'max_depth': 7,
-#     'n_estimators': 500,
-#     'subsample_freq': 2,
-#     'subsample_for_bin': 5000,
-#     'min_data_per_group': 100,
-#     'max_cat_to_onehot': 4,
-#     'cat_l2': 1.0,
-#     'cat_smooth': 59.5,
-#     'max_cat_threshold': 32,
-#     'metric_freq': 10,
-#     'verbosity': -1,
-#     'metric': 'multi_logloss',
-#     'xgboost_dart_mode': False,
-#     'uniform_drop': False,
-#     'colsample_bytree': 0.5,
-#     'drop_rate': 0.173,
-#     'learning_rate': 0.0267,
-#     'max_drop': 5,
-#     'min_child_samples': 10,
-#     'min_child_weight': 100.0,
-#     'min_split_gain': 0.1,
-#     'num_leaves': 7,
-#     'reg_alpha': 0.1,
-#     'reg_lambda': 0.00023,
-#     'skip_drop': 0.44,
-#     'subsample': 0.75
-# }
 OBJECT_ID = 'object_id'

@@ -1,30 +1,18 @@
-from tsfresh import extract_features
-
 COL_ORDER = ['class_6', 'class_15', 'class_16', 'class_42', 'class_52', 'class_53',
        'class_62', 'class_64', 'class_65', 'class_67', 'class_88', 'class_90',
        'class_92', 'class_95', 'class_99', 'object_id']
-from sklearn.model_selection import StratifiedKFold
-from tsfresh.feature_extraction import extract_features
-from lightgbm import LGBMClassifier
-from tqdm import *
-from numba import jit
-
-import gc
-import os
 import gc
 import glob
-import sys
-import time
-from datetime import datetime as dt
 
 import os
+from tqdm import *
+from tsfresh.feature_extraction import extract_features
 
 from plasticc.constants import OBJECT_ID, fcp_improved
 
 PRED_99_AVG = 0.14
 
 gc.enable()
-from functools import partial
 
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 import numpy as np  # linear algebra
@@ -50,14 +38,6 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
         test_feat_df.to_msgpack(f'feature_cache_nov_28/{i_c}.mp')
         del preds_df, test_feat_df
         gc.collect()
-
-
-def tsfresh_adder(mock_tr, feat_df, settings, disable_bar=True, **kwargs):
-    X = extract_features(
-        mock_tr, default_fc_parameters=settings, column_id=OBJECT_ID, profile=True,
-        column_sort='mjd', column_value='flux', disable_progressbar=disable_bar, **kwargs
-    ).rename_axis(OBJECT_ID)
-    return feat_df.join(X)
 
 
 def add_acor_feat(mock_tr, feat_df):
