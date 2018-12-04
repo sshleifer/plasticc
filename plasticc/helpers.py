@@ -1,4 +1,5 @@
 
+import os
 from tsfresh import extract_features
 import funcy
 import pandas as pd
@@ -96,7 +97,7 @@ def _tsfresh_extract(df, settings, disable_bar=True, **kwargs):
 
 from collections import defaultdict
 def merge_pars(pars40):
-    # BROKEN AF
+    """BROKEN AF"""
     base = defaultdict(list)
     for k in list(pars40.values()):
         for c, v in k.items():

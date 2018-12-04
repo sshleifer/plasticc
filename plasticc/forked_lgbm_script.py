@@ -123,7 +123,7 @@ def featurize(df, df_meta, aggs, fcp):
         df, column_value='flux', default_fc_parameters=fcp['flux'], **default_params)
 
     agg_df_ts_flux_by_flux_ratio_sq = extract_features(
-        df,  column_value='flux_by_flux_ratio_sq',
+        df, column_value='flux_by_flux_ratio_sq',
         default_fc_parameters=fcp['flux_by_flux_ratio_sq'], **default_params
     )
 
@@ -205,15 +205,30 @@ def agg_importances(imp_df):
     return (imp_df.groupby('feature').gain.agg([np.mean, np.std, len])
             .add_suffix('_gain').sort_values(by='mean_gain', ascending=False)).round()
 
+
 ILLEGAL_FNAMES = ['target', OBJECT_ID, 'hostgal_specz',
-                  'gal_b', 'gal_l', 'ra', 'ddf', 'decl', #'distmod'
+                  'gal_b', 'gal_l', 'ra', 'ddf', 'decl',  # 'distmod'
                   ]
+
+
+def my_rfe(x, y, sorted_fnames, classes, class_weights, max_n_to_delete=None, order=-1):
+    '''if order is -1 try deleting least important features first.'''
+    if max_n_to_delete is None:
+        max_n_to_delete = len(sorted_fnames) - 1
+    scores = {}
+    for i in range(max_n_to_delete):
+        fnames = sorted_fnames[:i * order]
+        _, score, _, _ = lgbm_modeling_cross_validation(
+            LGB_PARAMS, x[fnames], y, classes, class_weights, nr_fold=3,
+        )
+        scores[i] = score
+    return scores
 
 
 def lgbm_modeling_cross_validation(params, full_train, y, classes, class_weights, nr_fold=5,
                                    random_state=1):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
-    #assert 'distmod' in full_train.columns
+    # assert 'distmod' in full_train.columns
     # Compute weights
     w = y.value_counts()
     weights = {i: np.sum(w) / w[i] for i in w.index}
@@ -255,11 +270,13 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes, class_weights
     df_importances = agg_importances(importances)
     return clfs, score, df_importances, oof_preds
 
+
 from sklearn.metrics import log_loss
+
 
 def binary_lgbm_oof(params, xdf, y, nr_fold=3, random_state=1):
     xdf = xdf.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
-    #assert 'distmod' in xdf.columns
+    # assert 'distmod' in xdf.columns
     # Compute weights
     w = y.value_counts()
     weights = {i: np.sum(w) / w[i] for i in w.index}
@@ -283,8 +300,9 @@ def binary_lgbm_oof(params, xdf, y, nr_fold=3, random_state=1):
         )
         oof_preds[val_, :] = clf.predict_proba(val_x, num_iteration=clf.best_iteration_)
         clfs.append(clf)
-    score = log_loss(y, oof_preds[:,1])
+    score = log_loss(y, oof_preds[:, 1])
     return clfs, score, oof_preds
+
 
 def binary_lgbm(params, xdf, y, nr_fold=3, random_state=1):
     ret = []
@@ -292,8 +310,6 @@ def binary_lgbm(params, xdf, y, nr_fold=3, random_state=1):
         targ = (y == class_num)
         ret.append(binary_lgbm(LGB_PARAMS, xdf, targ, nr_fold=nr_fold, random_state=random_state))
     return ret
-
-
 
 
 def predict_chunk(df, clfs, meta_, fnames, featurize_configs, train_mean,
@@ -338,7 +354,6 @@ def avg_predict_proba(clfs, X_test):
 CHUNKSIZE = 5000000
 
 
-
 class AbstractFeatureAdder:
     def __init___(self, clfs, feat_dir, fnames):
 
@@ -376,6 +391,7 @@ def add_acor_feat(mock_tr, feat_df):
                          column_sort='mjd',
                          column_value='flux', disable_progressbar=True).rename_axis(OBJECT_ID)
     return feat_df.join(X)
+
 
 def process_test(clfs, features, featurize_configs, train_mean,
                  feat_dir=None, filename='predictions.csv', chunksize=CHUNKSIZE):
@@ -485,7 +501,6 @@ def main(argc, argv):
                         class_weights=class_weights,
                         nr_fold=5,
                         random_state=1)
-
 
     # modeling from CV
     clfs, score, importance_df, _ = eval_func(LGB_PARAMS)
