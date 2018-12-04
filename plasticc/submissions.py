@@ -52,12 +52,11 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
         gc.collect()
 
 
-def tsfresh_adder(mock_tr, feat_df, settings, **kwargs):
-    X = extract_features(mock_tr, default_fc_parameters=settings,
-                         column_id=OBJECT_ID, profile=True,
-                         column_sort='mjd',
-                         column_value='flux', disable_progressbar=True,
-                         **kwargs).rename_axis(OBJECT_ID)
+def tsfresh_adder(mock_tr, feat_df, settings, disable_bar=True, **kwargs):
+    X = extract_features(
+        mock_tr, default_fc_parameters=settings, column_id=OBJECT_ID, profile=True,
+        column_sort='mjd', column_value='flux', disable_progressbar=disable_bar, **kwargs
+    ).rename_axis(OBJECT_ID)
     return feat_df.join(X)
 
 

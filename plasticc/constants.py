@@ -56,7 +56,7 @@ fcp_improved = {
           'fft_aggregated': [{'aggtype': 'kurtosis'}]}
 }
 
-fcp_improved2 = {
+FC_PASSBAND_V2 = {
     'fft_aggregated': [{'aggtype': 'kurtosis'}, {'aggtype': 'skew'}],
     'cid_ce': [{'normalize': True}],
     'binned_entropy': [{'max_bins': 10}],
@@ -96,6 +96,41 @@ fcp = {  #
         'mean_abs_change': None,
     },
 }
+import tsfresh
+
+_useful_flux_features = [
+    'flux__ar_coefficient__k_10__coeff_4',
+    'flux__augmented_dickey_fuller__attr_"pvalue"',
+    'flux__autocorrelation__lag_6',
+    'flux__binned_entropy__max_bins_10',
+    'flux__change_quantiles__f_agg_"mean"__isabs_False__qh_1.0__ql_0.8',
+    'flux__cid_ce__normalize_True',
+    'flux__friedrich_coefficients__m_3__r_30__coeff_0',
+    'flux__friedrich_coefficients__m_3__r_30__coeff_2',
+    'flux__kurtosis',
+    'flux__median',
+    'flux__number_crossing_m__m_-1',
+    'flux__number_crossing_m__m_0',
+    'flux__number_crossing_m__m_1',
+    'flux__partial_autocorrelation__lag_2',
+    'flux__partial_autocorrelation__lag_4',
+    'flux__quantile__q_0.2',
+    'flux__quantile__q_0.3',
+    'flux__quantile__q_0.4',
+    'flux__quantile__q_0.6',
+    'flux__quantile__q_0.8',
+    'flux__quantile__q_0.9',
+    'flux__ratio_beyond_r_sigma__r_0.5',
+    'flux__ratio_beyond_r_sigma__r_1.5',
+    'flux__ratio_beyond_r_sigma__r_2',
+    'flux__sample_entropy',
+    'flux__skewness',
+    'flux__time_reversal_asymmetry_statistic__lag_1',
+    'flux__time_reversal_asymmetry_statistic__lag_2',
+    'flux__time_reversal_asymmetry_statistic__lag_3'
+]
+EXTRA_FLUX_PARS = tsfresh.feature_extraction.settings.from_columns(
+_useful_flux_features)['flux']  # very expensive
 best_params = {
     'device': 'cpu',
     'objective': 'multiclass',

@@ -7,9 +7,6 @@ from sklearn.model_selection import StratifiedKFold
 import gc
 import os
 import matplotlib.pyplot as plt
-import seaborn as sns
-import lightgbm as lgb
-from catboost import Pool, CatBoostClassifier
 import itertools
 import pickle, gzip
 import glob
