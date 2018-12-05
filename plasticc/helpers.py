@@ -5,10 +5,63 @@ import funcy
 import pandas as pd
 from tqdm import *
 
-from plasticc.constants import OBJECT_ID
+
 from .constants import *
 
 
+def flatten(names, sep='_'):
+    """turn iterable of strings into _ separated string, or return itself if string is passed."""
+    return sep.join(map(str, names)) if not isinstance(names, str) else names
+
+def flatten_cols(arg_df, sep='_'):
+    """Turn multiindex into single index. Does not mutate."""
+    df = arg_df.copy()
+    df.columns = df.columns.map(lambda x: flatten(x, sep=sep))
+    return df
+
+
+def make_fluxband_idx_feats(train):
+    gb = train.groupby((OBJECT_ID, PASSBAND))
+    passband_det_means = gb.detected.mean().unstack().add_prefix('mn_detected_')
+    fluxband_idx_feats = pd.DataFrame(
+        dict(
+            max_std_fluxband=gb.flux.std().unstack().idxmax(1),
+            max_fluxband=gb.flux.max().unstack().idxmax(1),
+            min_fluxband=gb.flux.min().unstack().idxmin(1),
+            max_absfluxband=gb.abs_flux.max().unstack().idxmax(1),
+        )
+    )
+    passband_flux_stats = gb.flux.agg(['std', 'max']).add_suffix('_flux').unstack().pipe(flatten_cols)
+    return fluxband_idx_feats.join(passband_det_means).join(passband_flux_stats)
+
+
+def make_det_df_stats(train):
+    det_df = train[train.detected == 1]
+    undet_df = train[train.detected == 0]
+    det_flux_stats = det_df.groupby(OBJECT_ID).flux.agg(BASE_AGGS)
+    undet_flux_stats = undet_df.groupby(OBJECT_ID).flux.agg(BASE_AGGS)
+    #ratios = (det_flux_stats / undet_flux_stats)
+    flux_by_det_feats = pd.concat([det_flux_stats.add_prefix('det_flux_'), undet_flux_stats.add_prefix('undet_flux_'),
+                                  # ratios.add_prefix('ratio')
+                                   ], axis=1)
+    return flux_by_det_feats
+
+
+
+
+def make_dec4_feats(train):
+    return pd.concat([make_det_df_stats(train), make_fluxband_idx_feats(train)],
+              axis=1)
+
+
+
+
+
+def make_hostgal_ratio_feats(xdf4):
+    xdf4['hostgal_photoz_certain_ratio'] = (xdf4['hostgal_photoz'] / xdf4['hostgal_photoz_certain'])
+    xdf4['hostgal_err_ratio'] = xdf4['hostgal_photoz_err'] / xdf4['hostgal_photoz']
+    xdf4['hostgal_err_certain'] = xdf4['hostgal_photoz_err'] / xdf4['hostgal_photoz']
+    return xdf4
 
 def get_membership_mask(candidates, collection_they_might_be_in) -> np.ndarray:
     """Return a boolean list where entry i indicates whether candidates[i] is in the second arg."""
@@ -94,6 +147,9 @@ def _tsfresh_extract(df, settings, disable_bar=True, **kwargs):
         column_sort='mjd',  disable_progressbar=disable_bar, **kwargs
     ).rename_axis(OBJECT_ID)
     return X
+
+
+
 
 from collections import defaultdict
 def merge_pars(pars40):

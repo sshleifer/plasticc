@@ -9,7 +9,9 @@ TRAIN_SET_SHAPE = 1421705
 
 FLUX_RATIO_PREFIX = 'flux_by_flux_ratio_sq'
 
-
+classes = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
+class_weights = {c: 1 for c in classes}
+class_weights.update({c:2 for c in [64, 15]})
 GALACTIC_CLASSES = (6, 16, 53, 65, 92)
 # docs say 3492890
 DTYPES = {
@@ -20,6 +22,7 @@ DTYPES = {
     'flux_err': np.float32,
     'detected': np.int8
 }
+COLUMN_TO_TYPE = DTYPES
 
 DATA_DIR = Path('/Users/shleifer/plasticc')
 
@@ -212,5 +215,39 @@ LGB_PARAMS = {
     'skip_drop': 0.44,
     'subsample': 0.75
 }
-
+BASE_AGGS = ['min', 'max', 'mean', 'median', 'std', 'skew']
 OBJECT_ID = 'object_id'
+OID = OBJECT_ID
+PASSBAND = 'passband'
+
+PREVIOUSLY_UNUSED_FLUX_PASSBAND_FEATS = [
+    '0__fft_aggregated__aggtype_"kurtosis"',
+    '2__autocorrelation__lag_1',
+    '2__quantile__q_0.9',
+    '3__fft_aggregated__aggtype_"kurtosis"',
+    '3__skewness',
+    '4__autocorrelation__lag_1',
+    '4__fft_aggregated__aggtype_"skew"',
+    'flux__friedrich_coefficients__m_3__r_30__coeff_3',
+]
+
+FNAMES_126_ADDITIONS = PREVIOUSLY_UNUSED_FLUX_PASSBAND_FEATS + [
+    # should be cached across machines
+    'flux_by_flux_ratio_sq0__linear_trend__attr_"stderr"',
+    'flux_by_flux_ratio_sq0__quantile__q_0.8',
+    'flux_by_flux_ratio_sq1__change_quantiles__f_agg_"mean"__isabs_True__qh_0.4__ql_0.0',
+    'flux_by_flux_ratio_sq1__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.0',
+    'flux_by_flux_ratio_sq1__minimum',
+    'flux_by_flux_ratio_sq1__quantile__q_0.7',
+    'flux_by_flux_ratio_sq1__skewness',
+    'flux_by_flux_ratio_sq2__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.0',
+    'flux_by_flux_ratio_sq2__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.2',
+    'flux_by_flux_ratio_sq2__median',
+    'flux_by_flux_ratio_sq2__minimum',
+    'flux_by_flux_ratio_sq2__quantile__q_0.1',
+    'flux_by_flux_ratio_sq2__quantile__q_0.6',
+    'flux_by_flux_ratio_sq2__quantile__q_0.7',
+    'flux_by_flux_ratio_sq2__quantile__q_0.8',
+    'flux_by_flux_ratio_sq2__skewness',
+    'flux_by_flux_ratio_sq5__change_quantiles__f_agg_"var"__isabs_True__qh_0.2__ql_0.0'
+]

@@ -16,7 +16,7 @@ from datetime import datetime as dt
 
 import os
 
-from plasticc.constants import OBJECT_ID
+from plasticc.constants import OBJECT_ID, classes, class_weights
 
 PRED_99_AVG = 0.14
 
@@ -162,7 +162,7 @@ def process_meta(filename):
     return meta_df
 
 
-def multi_weighted_logloss(y_true, y_preds, classes, class_weights):
+def multi_weighted_logloss(y_true, y_preds, classes=classes, class_weights=class_weights):
     """
     refactor from
     @author olivier https://www.kaggle.com/ogrellier
@@ -202,7 +202,7 @@ def lgbm_multi_weighted_logloss(y_true, y_preds):
 
 
 def agg_importances(imp_df):
-    return (imp_df.groupby('feature').gain.agg([np.mean, np.std, len])
+    return (imp_df.groupby('feature').gain.agg([np.mean, np.std])
             .add_suffix('_gain').sort_values(by='mean_gain', ascending=False)).round()
 
 
@@ -211,7 +211,7 @@ ILLEGAL_FNAMES = ['target', OBJECT_ID, 'hostgal_specz',
                   ]
 
 
-def my_rfe(x, y, sorted_fnames, classes, class_weights, max_n_to_delete=None, order=-1):
+def my_rfe(x, y, sorted_fnames, classes=classes, class_weights=class_weights, max_n_to_delete=None, order=-1):
     '''if order is -1 try deleting least important features first.'''
     if max_n_to_delete is None:
         max_n_to_delete = len(sorted_fnames) - 1
@@ -225,8 +225,8 @@ def my_rfe(x, y, sorted_fnames, classes, class_weights, max_n_to_delete=None, or
     return scores
 
 
-def lgbm_modeling_cross_validation(params, full_train, y, classes, class_weights, nr_fold=5,
-                                   random_state=1):
+def lgbm_modeling_cross_validation(params, full_train, y, classes=classes, class_weights=class_weights,
+                                   nr_fold=5, random_state=1):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
     # Compute weights
