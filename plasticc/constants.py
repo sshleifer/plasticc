@@ -25,6 +25,8 @@ DTYPES = {
 COLUMN_TO_TYPE = DTYPES
 
 DATA_DIR = Path('/Users/shleifer/plasticc')
+if not DATA_DIR.exists():
+    DATA_DIR = Path('/home/paperspace/data')
 
 aggs = {
     'flux': ['min', 'max', 'mean', 'median', 'std', 'skew'],

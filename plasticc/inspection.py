@@ -49,7 +49,7 @@ def plot_confusion_matrix(cm, classes,
     plt.xlabel('Predicted label')
     plt.tight_layout()
 
-def build_and_plot_cm(y, oof_preds):
+def build_and_plot_cm(y, oof_preds, data_dir=DATA_DIR):
     unique_y = np.unique(y)
     class_map = dict()
     for i, val in enumerate(unique_y):
@@ -59,7 +59,6 @@ def build_and_plot_cm(y, oof_preds):
     # Compute confusion matrix
     cnf_matrix = confusion_matrix(y_map, np.argmax(oof_preds, axis=-1))
     np.set_printoptions(precision=2)
-
     sample_sub = pd.read_csv(DATA_DIR / 'sample_submission.csv')
     class_names = list(sample_sub.columns[1:-1])
     del sample_sub;
