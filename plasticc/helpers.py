@@ -1,17 +1,19 @@
-
 import os
 from tsfresh import extract_features
 import funcy
 import pandas as pd
 from tqdm import *
 
-
 from .constants import *
 
+
+def settings_from_cols(cols):
+    return tsfresh.feature_extraction.settings.from_columns(cols)
 
 def flatten(names, sep='_'):
     """turn iterable of strings into _ separated string, or return itself if string is passed."""
     return sep.join(map(str, names)) if not isinstance(names, str) else names
+
 
 def flatten_cols(arg_df, sep='_'):
     """Turn multiindex into single index. Does not mutate."""
@@ -31,7 +33,8 @@ def make_fluxband_idx_feats(train):
             max_absfluxband=gb.abs_flux.max().unstack().idxmax(1),
         )
     )
-    passband_flux_stats = gb.flux.agg(['std', 'max']).add_suffix('_flux').unstack().pipe(flatten_cols)
+    passband_flux_stats = gb.flux.agg(['std', 'max']).add_suffix('_flux').unstack().pipe(
+        flatten_cols)
     return fluxband_idx_feats.join(passband_det_means).join(passband_flux_stats)
 
 
@@ -40,22 +43,19 @@ def make_det_df_stats(train):
     undet_df = train[train.detected == 0]
     det_flux_stats = det_df.groupby(OBJECT_ID).flux.agg(BASE_AGGS)
     undet_flux_stats = undet_df.groupby(OBJECT_ID).flux.agg(BASE_AGGS)
-    #ratios = (det_flux_stats / undet_flux_stats)
-    flux_by_det_feats = pd.concat([det_flux_stats.add_prefix('det_flux_'), undet_flux_stats.add_prefix('undet_flux_'),
-                                  # ratios.add_prefix('ratio')
-                                   ], axis=1)
+    # ratios = (det_flux_stats / undet_flux_stats)
+    flux_by_det_feats = pd.concat(
+        [det_flux_stats.add_prefix('det_flux_'), undet_flux_stats.add_prefix('undet_flux_'),
+         # ratios.add_prefix('ratio')
+         ], axis=1)
     return flux_by_det_feats
-
-
 
 
 def make_dec4_feats(train):
     return pd.concat([make_det_df_stats(train), make_fluxband_idx_feats(train)],
-              axis=1)
+                     axis=1)
 
-
-
-
+def idx_renamer(idx, rename_dct): return pd.Index([rename_dct.get(x, x) for x in idx])
 
 def make_hostgal_ratio_feats(xdf4):
     xdf4['hostgal_photoz_certain_ratio'] = (xdf4['hostgal_photoz'] / xdf4['hostgal_photoz_certain'])
@@ -63,29 +63,31 @@ def make_hostgal_ratio_feats(xdf4):
     xdf4['hostgal_err_certain'] = xdf4['hostgal_photoz_err'] / xdf4['hostgal_photoz']
     return xdf4
 
+
 def get_membership_mask(candidates, collection_they_might_be_in) -> np.ndarray:
     """Return a boolean list where entry i indicates whether candidates[i] is in the second arg."""
     return np.array([x in collection_they_might_be_in for x in candidates])
 
 
-#TODO add smart TQDM
+# TODO add smart TQDM
 def tqdm_chunks(collection, chunk_size, enum=False):
     """Call funcy.chunks and return the resulting generator wrapped in a progress bar."""
-    tqdm_nice = tqdm_notebook #if in_notebook() else tqdm
+    tqdm_nice = tqdm_notebook  # if in_notebook() else tqdm
     chunks = funcy.chunks(chunk_size, collection)
     if enum:
         chunks = enumerate(chunks)
 
     return tqdm_nice(chunks, total=int(np.ceil(len(collection) / chunk_size)))
 
+
 def difference_join(left_df, right_df):
-    result  = left_df.join(right_df[right_df.columns.difference(left_df.columns)])
+    result = left_df.join(right_df[right_df.columns.difference(left_df.columns)])
     if result.count().min() < left_df.shape[0] / 2:
         print('There are many nans')
     return result
 
 
-TSKW  =dict(column_id=OBJECT_ID, column_sort='mjd')
+TSKW = dict(column_id=OBJECT_ID, column_sort='mjd')
 
 
 def add_features(chunk_paths, save_dir):
@@ -95,6 +97,7 @@ def add_features(chunk_paths, save_dir):
         df = pd.read_msgpack(pth).reset_index()
         feats = pd.read_msgpack(feat_cache_path)
         test_feat_df = tsfresh_joiner(df, feats, NEW_PARS['flux'], disable_bar=False)
+
 
 def make_extra_ts_featurs(train, meta_train):
     feats = []
@@ -130,10 +133,9 @@ def make_extra_ts_featurs(train, meta_train):
     new_feat_df2 = pd.concat(feats2)
     new_feat_df3 = pd.concat(feats3)
 
-    catted=  pd.concat([new_feat_df, new_feat_df2,
+    catted = pd.concat([new_feat_df, new_feat_df2,
                         new_feat_df3.add_prefix('flux_by_flux_ratio_sq')], axis=1)
     return catted
-
 
 
 def tsfresh_joiner(df, feat_df, settings, disable_bar=True, **kwargs):
@@ -144,14 +146,14 @@ def tsfresh_joiner(df, feat_df, settings, disable_bar=True, **kwargs):
 def _tsfresh_extract(df, settings, disable_bar=True, **kwargs):
     X = extract_features(
         df, default_fc_parameters=settings, column_id=OBJECT_ID, profile=True,
-        column_sort='mjd',  disable_progressbar=disable_bar, **kwargs
+        column_sort='mjd', disable_progressbar=disable_bar, **kwargs
     ).rename_axis(OBJECT_ID)
     return X
 
 
-
-
 from collections import defaultdict
+
+
 def merge_pars(pars40):
     """BROKEN AF"""
     base = defaultdict(list)
@@ -163,3 +165,10 @@ def merge_pars(pars40):
                 base[c] = v
     return dict(base)
 
+
+
+def fix_sq_colnames(x):
+    if x.startswith('flux_by_flux_ratio_sq'):
+        return 'sq_'.join(x.split('sq'))
+    else:
+        return x
