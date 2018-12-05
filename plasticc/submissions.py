@@ -1,3 +1,5 @@
+from plasticc.inspection import classes
+
 COL_ORDER = ['class_6', 'class_15', 'class_16', 'class_42', 'class_52', 'class_53',
        'class_62', 'class_64', 'class_65', 'class_67', 'class_88', 'class_90',
        'class_92', 'class_95', 'class_99', 'object_id']
@@ -8,7 +10,7 @@ import os
 from tqdm import *
 from tsfresh.feature_extraction import extract_features
 
-from plasticc.constants import OBJECT_ID, fcp_improved
+from plasticc.constants import OBJECT_ID, fcp_improved, SUB_SIZE
 
 PRED_99_AVG = 0.14
 
@@ -92,3 +94,48 @@ def patcher(test_feat_df, clfs, fnames_final, save_path):
     preds_df = make_pred_df(clfs, fnames_final, test_feat_df.reset_index())
     preds_df[COL_ORDER].to_csv(save_path, header=False, mode='a', index=False)
 
+
+def dedup_and_gen_unknown(df, new_path):
+    if df.shape[0] != SUB_SIZE:
+        df = dedup_sub(df, ['object_id'])
+    if df.shape[0] != SUB_SIZE:
+        print(f'df is only {df.shape[0]} rows. Expecting {SUB_SIZE:,}.')
+    class_99 = GenUnknown(df)
+    df['class_99'] = class_99
+    assert 'object_id' in df.columns, df.columns
+    df.to_csv(new_path, index=False)
+
+    return new_path
+
+
+def dedup_sub(df, subset):
+    dups = df.duplicated(subset=subset)
+    if dups.sum() > 0:
+        print(f'Deleting {dups.sum()} duplicate {subset}')
+        df = df.loc[~dups]
+    return df
+
+
+def GenUnknown(preds_df):
+    feats = classes
+    data = pd.DataFrame()
+    data['mymean'] = preds_df[feats].mean(axis=1)
+    data['mymedian'] = preds_df[feats].median(axis=1)
+    data['mymax'] = preds_df[feats].max(axis=1)
+    return (0.5 + 0.5 * data["mymedian"] + 0.25 * data["mymean"] - 0.5 * data["mymax"] ** 3) / 2
+
+
+def msg_pack_to_csv(path):
+    base, _ = os.path.splitext(path)
+    new_path = f'{base}.csv'
+    assert not os.path.exists(new_path), new_path
+    pd.read_msgpack(path).to_csv(new_path)
+    return new_path
+
+
+def compare_subs(sub1, sub2, n=300):
+    deltas = sub1.sort_values('object_id').tail(n) - sub2.sort_values('object_id').tail(n)
+    by_class = deltas.abs().describe()
+    overall = deltas.stack().abs().describe()
+    by_class.loc['OVERALL'] = overall
+    return by_class

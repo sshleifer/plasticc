@@ -251,3 +251,9 @@ FNAMES_126_ADDITIONS = PREVIOUSLY_UNUSED_FLUX_PASSBAND_FEATS + [
     'flux_by_flux_ratio_sq2__skewness',
     'flux_by_flux_ratio_sq5__change_quantiles__f_agg_"var"__isabs_True__qh_0.2__ql_0.0'
 ]
+
+MJD_SETTINGS = {'cid_ce': [{'normalize': False}],
+  'standard_deviation': None,
+  'variance': None,
+  'fft_coefficient': [{'coeff': 1, 'attr': 'abs'}],
+  'linear_trend': [{'attr': 'slope'}]}
