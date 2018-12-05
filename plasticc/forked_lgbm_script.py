@@ -162,6 +162,11 @@ def process_meta(filename):
     return meta_df
 
 
+def make_oof_pred_df(oof_preds):
+    OOF_PRED_COLS = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
+    return pd.DataFrame(oof_preds, columns=OOF_PRED_COLS)
+
+
 def multi_weighted_logloss(y_true, y_preds, classes=classes, class_weights=class_weights):
     """
     refactor from
