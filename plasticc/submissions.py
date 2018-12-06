@@ -135,6 +135,13 @@ def dedup_and_gen_unknown(df, new_path):
     return new_path
 
 
+def compare_subs(a, b):
+    """Total row distance, averaged over rows."""
+    intersection =   a.index.intersection(b.index)
+    return (a.loc[intersection] - b.loc[intersection]).abs().sum(1).mean()
+
+
+
 def dedup_sub(df, subset):
     dups = df.duplicated(subset=subset)
     if dups.sum() > 0:
