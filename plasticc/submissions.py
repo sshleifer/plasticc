@@ -12,7 +12,7 @@ from tsfresh.feature_extraction import extract_features
 
 from plasticc.constants import OBJECT_ID, fcp_improved, SUB_SIZE
 
-PRED_99_AVG = 0.14
+PRED_99_AVG = 0.14  # old
 
 gc.enable()
 
@@ -21,6 +21,8 @@ import numpy as np  # linear algebra
 
 np.warnings.filterwarnings('ignore')
 from .forked_lgbm_script import make_pred_df
+from .constants import MASSIVE_RENAMER
+
 
 def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
     for pth in tqdm_notebook(chunk_paths):
@@ -40,6 +42,28 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
         test_feat_df.to_msgpack(f'feature_cache_nov_28/{i_c}.mp')
         del preds_df, test_feat_df
         gc.collect()
+
+
+import funcy
+def sub_from_dir(feat_dir, clfs, fnames, save_path=None):
+    preds = []
+    chunk_paths = glob.glob(f'{feat_dir}/*.mp')
+    for pth in tqdm_notebook(chunk_paths):
+        test_feat_df = pd.read_msgpack(pth).rename(columns=funcy.flip(MASSIVE_RENAMER))
+        preds_df = make_pred_df(clfs, fnames, test_feat_df.reset_index()).set_index(OBJECT_ID)
+        preds.append(preds_df)
+    df = pd.concat(preds)
+    class99 = GenUnknown(df)
+    df['class_99'] = class99
+    if save_path is not None:
+        if OBJECT_ID in df.columns:
+            df = df.set_index(OBJECT_ID)
+        df.to_csv(save_path)
+        print(f'saved to {save_path}')
+    return df
+
+
+
 
 
 def add_acor_feat(mock_tr, feat_df):
@@ -77,14 +101,18 @@ def subdringus(clfs, fnames_final, save_path):
         #test_feat_df.to_msgpack(f'feature_cache_nov_28/{i_c}.mp')
         del preds_df, test_feat_df
         gc.collect()
-    feat_dir = 'feature_cache_nov_28'
-    feature_add_fn = add_improved_feats
-    save_path = 'no_drop_77_features_oof_6231.csv'
-    raw_chunks_pat = 'chunked_test_df/*.mp'
-    chunk_paths = sorted(list(glob.glob(raw_chunks_pat)))
-    col_order = ['class_6', 'class_15', 'class_16', 'class_42', 'class_52', 'class_53',
-                 'class_62', 'class_64', 'class_65', 'class_67', 'class_88', 'class_90',
-                 'class_92', 'class_95', 'class_99', 'object_id']
+
+
+def validate_sub(df) -> None:
+    desired_cols = ['class_6', 'class_15', 'class_16', 'class_42', 'class_52', 'class_53',
+     'class_62', 'class_64', 'class_65', 'class_67', 'class_88', 'class_90',
+     'class_92', 'class_95', 'class_99', 'object_id']
+    desired_shape = (3492890, 16)
+    extra_cols = df.columns.difference(desired_cols)
+    missing_cols = set(desired_cols).difference(df.columns)
+    assert len(missing_cols) == 0, f'missing column {missing_cols}'
+    assert len(extra_cols) == 0, f'extra column {missing_cols}'
+    assert df.shape == desired_shape, f'expected shape {desired_shape} got {df.shape}'
 
 
 def patcher(test_feat_df, clfs, fnames_final, save_path):
@@ -98,13 +126,12 @@ def patcher(test_feat_df, clfs, fnames_final, save_path):
 def dedup_and_gen_unknown(df, new_path):
     if df.shape[0] != SUB_SIZE:
         df = dedup_sub(df, ['object_id'])
-    if df.shape[0] != SUB_SIZE:
-        print(f'df is only {df.shape[0]} rows. Expecting {SUB_SIZE:,}.')
+        if df.shape[0] != SUB_SIZE:
+            print(f'df is only {df.shape[0]} rows. Expecting {SUB_SIZE:,}.')
     class_99 = GenUnknown(df)
     df['class_99'] = class_99
     assert 'object_id' in df.columns, df.columns
     df.to_csv(new_path, index=False)
-
     return new_path
 
 

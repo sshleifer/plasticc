@@ -9,9 +9,6 @@ TRAIN_SET_SHAPE = 1421705
 
 FLUX_RATIO_PREFIX = 'flux_by_flux_ratio_sq'
 
-classes = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
-class_weights = {c: 1 for c in classes}
-class_weights.update({c:2 for c in [64, 15]})
 GALACTIC_CLASSES = (6, 16, 53, 65, 92)
 # docs say 3492890
 DTYPES = {
@@ -280,3 +277,29 @@ TO_DROP4 = [
     'flux_by_flux_ratio_sq_2__skewness',
     'flux_by_flux_ratio_sq_5__change_quantiles__f_agg_"var"__isabs_True__qh_0.2__ql_0.0',
 ]
+
+
+
+MASSIVE_RENAMER = {
+    'flux_by_flux_ratio_sq0__linear_trend__attr_"stderr"': 'flux_by_flux_ratio_sq_0__linear_trend__attr_"stderr"',
+ 'flux_by_flux_ratio_sq0__quantile__q_0.8': 'flux_by_flux_ratio_sq_0__quantile__q_0.8',
+ 'flux_by_flux_ratio_sq1__change_quantiles__f_agg_"mean"__isabs_True__qh_0.4__ql_0.0': 'flux_by_flux_ratio_sq_1__change_quantiles__f_agg_"mean"__isabs_True__qh_0.4__ql_0.0',
+ 'flux_by_flux_ratio_sq1__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.0': 'flux_by_flux_ratio_sq_1__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.0',
+ 'flux_by_flux_ratio_sq1__minimum': 'flux_by_flux_ratio_sq_1__minimum',
+ 'flux_by_flux_ratio_sq1__quantile__q_0.7': 'flux_by_flux_ratio_sq_1__quantile__q_0.7',
+ 'flux_by_flux_ratio_sq1__skewness': 'flux_by_flux_ratio_sq_1__skewness',
+ 'flux_by_flux_ratio_sq2__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.0': 'flux_by_flux_ratio_sq_2__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.0',
+ 'flux_by_flux_ratio_sq2__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.2': 'flux_by_flux_ratio_sq_2__change_quantiles__f_agg_"mean"__isabs_True__qh_0.6__ql_0.2',
+ 'flux_by_flux_ratio_sq2__median': 'flux_by_flux_ratio_sq_2__median',
+ 'flux_by_flux_ratio_sq2__minimum': 'flux_by_flux_ratio_sq_2__minimum',
+ 'flux_by_flux_ratio_sq2__quantile__q_0.1': 'flux_by_flux_ratio_sq_2__quantile__q_0.1',
+ 'flux_by_flux_ratio_sq2__quantile__q_0.6': 'flux_by_flux_ratio_sq_2__quantile__q_0.6',
+ 'flux_by_flux_ratio_sq2__quantile__q_0.7': 'flux_by_flux_ratio_sq_2__quantile__q_0.7',
+ 'flux_by_flux_ratio_sq2__quantile__q_0.8': 'flux_by_flux_ratio_sq_2__quantile__q_0.8',
+ 'flux_by_flux_ratio_sq2__skewness': 'flux_by_flux_ratio_sq_2__skewness',
+ 'flux_by_flux_ratio_sq5__change_quantiles__f_agg_"var"__isabs_True__qh_0.2__ql_0.0': 'flux_by_flux_ratio_sq_5__change_quantiles__f_agg_"var"__isabs_True__qh_0.2__ql_0.0',
+ 'flux__partial_autocorrelation__lag_1': 'efficient_flux__partial_autocorrelation__lag_1'
+}
+CLASSES = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
+CLASS_WEIGHTS = {6: 1, 15: 2, 16: 1, 42: 1, 52: 1, 53: 1, 62: 1, 64: 2, 65: 1, 67: 1, 88: 1,
+                 90: 1, 92: 1, 95: 1}

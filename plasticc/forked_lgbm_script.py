@@ -16,7 +16,7 @@ from datetime import datetime as dt
 
 import os
 
-from plasticc.constants import OBJECT_ID, classes, class_weights
+from plasticc.constants import OBJECT_ID, CLASSES, class_weights, CLASS_WEIGHTS
 
 PRED_99_AVG = 0.14
 
@@ -167,7 +167,7 @@ def make_oof_pred_df(oof_preds):
     return pd.DataFrame(oof_preds, columns=OOF_PRED_COLS)
 
 
-def multi_weighted_logloss(y_true, y_preds, classes=classes, class_weights=class_weights):
+def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=class_weights):
     """
     refactor from
     @author olivier https://www.kaggle.com/ogrellier
@@ -194,15 +194,10 @@ def multi_weighted_logloss(y_true, y_preds, classes=classes, class_weights=class
     return loss
 
 
-classes = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
-CLASS_WEIGHTS = {6: 1, 15: 2, 16: 1, 42: 1, 52: 1, 53: 1, 62: 1, 64: 2, 65: 1, 67: 1, 88: 1,
-                 90: 1, 92: 1, 95: 1}
-
-
 def lgbm_multi_weighted_logloss(y_true, y_preds):
     """refactor from olivier.multi logloss for PLAsTiCC challenge."""
     # https://www.kaggle.com/c/PLAsTiCC-2018/discussion/67194 (Kyle Boone and Giba probing)
-    loss = multi_weighted_logloss(y_true, y_preds, classes, CLASS_WEIGHTS)
+    loss = multi_weighted_logloss(y_true, y_preds, CLASSES, CLASS_WEIGHTS)
     return 'wloss', loss, False
 
 
@@ -216,7 +211,7 @@ ILLEGAL_FNAMES = ['target', OBJECT_ID, 'hostgal_specz',
                   ]
 
 
-def my_rfe(x, y, sorted_fnames, classes=classes, class_weights=class_weights, max_n_to_delete=None, order=-1):
+def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=class_weights, max_n_to_delete=None, order=-1):
     '''if order is -1 try deleting least important features first.'''
     if max_n_to_delete is None:
         max_n_to_delete = len(sorted_fnames) - 1
@@ -230,7 +225,7 @@ def my_rfe(x, y, sorted_fnames, classes=classes, class_weights=class_weights, ma
     return scores
 
 
-def lgbm_modeling_cross_validation(params, full_train, y, classes=classes, class_weights=class_weights,
+def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class_weights=CLASS_WEIGHTS,
                                    nr_fold=5, random_state=1):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
@@ -261,7 +256,7 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=classes, class
         clfs.append(clf)
 
         oof_preds[val_, :] = clf.predict_proba(val_x, num_iteration=clf.best_iteration_)
-        # fold_loss = multi_weighted_logloss(val_y, oof_preds[val_, :], classes, class_weights)
+        # fold_loss = multi_weighted_logloss(val_y, oof_preds[val_, :], CLASSES, class_weights)
         imp_df = pd.DataFrame({
             'feature': full_train.columns,
             'gain': clf.feature_importances_,
@@ -331,15 +326,7 @@ def predict_chunk(df, clfs, meta_, fnames, featurize_configs, train_mean,
 
 def make_pred_df(clfs, features, test_feat_df):
     preds = avg_predict_proba(clfs, test_feat_df[features])
-    # Compute preds_99 as the proba of class not being any of the others
-    # preds_99 = 0.1 gives 1.769
-    preds_99 = np.ones(preds.shape[0])
-    for i in range(preds.shape[1]):
-        preds_99 *= (1 - preds[:, i])
-
-    preds_df_ = pd.DataFrame(preds,
-                             columns=['class_{}'.format(s) for s in clfs[0].classes_])
-    preds_df_['class_99'] = PRED_99_AVG * preds_99 / np.mean(preds_99)  # TODO: new logic
+    preds_df_ = pd.DataFrame(preds, columns=['class_{}'.format(s) for s in clfs[0].classes_])
     preds_df_['object_id'] = test_feat_df['object_id']
     return preds_df_
 
@@ -479,9 +466,9 @@ def main(argc, argv):
     # with Kyle Boone's post https://www.kaggle.com/kyleboone
     class_weights = {c: 1 for c in classes}
     class_weights.update({c: 2 for c in [64, 15]})
-    print('Unique classes : {}, {}'.format(len(classes), classes))
+    print('Unique CLASSES : {}, {}'.format(len(classes), classes))
     # if len(np.unique(y_true)) > 14:
-    #    classes.append(99)
+    #    CLASSES.append(99)
     #    CLASS_WEIGHTS[99] = 2
 
     if 'object_id' in full_train:

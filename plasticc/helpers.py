@@ -172,3 +172,8 @@ def fix_sq_colnames(x):
         return 'sq_'.join(x.split('sq'))
     else:
         return x
+
+
+def zip_to_series(a,b):
+    assert len(a) == len(b)
+    return pd.Series(funcy.zipdict(a,b))
