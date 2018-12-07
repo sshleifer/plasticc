@@ -193,10 +193,9 @@ def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS
     return loss
 
 
-def lgbm_multi_weighted_logloss(y_true, y_preds):
+def lgbm_multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
     """refactor from olivier.multi logloss for PLAsTiCC challenge."""
-    # https://www.kaggle.com/c/PLAsTiCC-2018/discussion/67194 (Kyle Boone and Giba probing)
-    loss = multi_weighted_logloss(y_true, y_preds, CLASSES, CLASS_WEIGHTS)
+    loss = multi_weighted_logloss(y_true, y_preds, classes, class_weights)
     return 'wloss', loss, False
 
 
@@ -245,6 +244,9 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
         val_x, val_y = full_train.iloc[val_], y.iloc[val_]
 
         clf = LGBMClassifier(**params)
+        loss_fn = lambda y, ypred: lgbm_multi_weighted_logloss(
+            y, ypred, classes=classes, class_weights=class_weights
+        )
         clf.fit(
             trn_x, trn_y,
             eval_set=[(trn_x, trn_y), (val_x, val_y)],
@@ -266,7 +268,10 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
 
     score = multi_weighted_logloss(y_true=y, y_preds=oof_preds,
                                    classes=classes, class_weights=class_weights)
-    print(f'OOF:{score:.4f} n_folds={nr_fold}, nfeatures={full_train.shape[1]}')
+    print(f'OOF:{score:.4f} n_folds={nr_fold}, nfeat={full_train.shape[1]}')
+    if class_weights != CLASS_WEIGHTS:
+        normal_weight_score = multi_weighted_logloss(y, oof_preds)
+        print(f'OOF Default weights:{normal_weight_score:.4f} n_folds={nr_fold}, nfeat={full_train.shape[1]}')
     df_importances = agg_importances(importances)
     oof_df = make_oof_pred_df(oof_preds, columns=clf.classes_)
     return clfs, score, df_importances, oof_df

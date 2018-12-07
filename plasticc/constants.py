@@ -338,6 +338,11 @@ def gen_sw_experiments(configs):
             sw[k] = sw[k] * v
             if cw[k] == 1:
                 cw[k] = cw[k] * v
-            weights.append(dict(sweights=sw, class_weights=cw))
+        weights.append(dict(sweights=sw, class_weights=cw))
     return weights
+
+cw_res = []
+for i,c in enumerate(cw_res):
+    cw_res[-1].to_msgpack(f'oof_preds/config_{i}_10fold.mp')
+    lg
 
