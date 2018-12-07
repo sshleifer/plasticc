@@ -305,7 +305,8 @@ MASSIVE_RENAMER = {
  'flux__partial_autocorrelation__lag_1': 'efficient_flux__partial_autocorrelation__lag_1'
 }
 CLASSES = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
-CLASS_WEIGHTS = {6: 1, 15: 2, 16: 1, 42: 1, 52: 1, 53: 1, 62: 1, 64: 2, 65: 1, 67: 1, 88: 1,
+CLASS_WEIGHTS = { 64: 2, 15: 2, 6: 1, 16: 1, 42: 1, 52: 1, 53: 1,
+                 62: 1,  65: 1, 67: 1, 88: 1,
                  90: 1, 92: 1, 95: 1}
 DEFAULT_SAMPLE_WEIGHTS = {  # 7848 / num appearances
     90: 10.18,
@@ -323,3 +324,20 @@ DEFAULT_SAMPLE_WEIGHTS = {  # 7848 / num appearances
     64: 230.82,
     53: 784.8
 }
+config1 = {53: 3, 52: 3, 90: .33}
+config2 = {53: 3, 52: 3, 90: .33, 6:3, 64: 3, 95:3, 90: .33}
+config3 =  {53: 3, 52: 3, 90: .33, 6:3, 64: 3, 95:3, 90: .33, 64:2, 15:2}
+CONFIGS_DEC7 = [config1, config2, config3]
+
+def gen_sw_experiments(configs):
+    weights = []
+    for c in configs:
+        sw = DEFAULT_SAMPLE_WEIGHTS.copy()
+        cw = CLASS_WEIGHTS.copy()
+        for k,v in c.items():
+            sw[k] = sw[k] * v
+            if cw[k] == 1:
+                cw[k] = cw[k] * v
+            weights.append(dict(sweights=sw, class_weights=cw))
+    return weights
+

@@ -173,3 +173,8 @@ def compare_subs(sub1, sub2, n=300):
     overall = deltas.stack().abs().describe()
     by_class.loc['OVERALL'] = overall
     return by_class
+
+
+def mn_compare_df(uneven, best):
+    return pd.DataFrame(dict(delta=uneven.mean() - best.mean(), orig=best.mean())).round(3).sort_values(
+        'orig', ascending=False)
