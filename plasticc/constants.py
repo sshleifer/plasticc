@@ -10,6 +10,10 @@ TRAIN_SET_SHAPE = 1421705
 FLUX_RATIO_PREFIX = 'flux_by_flux_ratio_sq'
 
 GALACTIC_CLASSES = (6, 16, 53, 65, 92)
+UNDERWEIGHTED_CLASSES = (53,)
+# we say shit is class 90 that is not: eg (42, 52, 67) are the 3 largest cultrups
+# need to work on separating 52 and 90!
+
 # docs say 3492890
 DTYPES = {
     'object_id': np.int32,

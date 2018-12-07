@@ -16,7 +16,7 @@ from datetime import datetime as dt
 
 import os
 
-from plasticc.constants import OBJECT_ID, CLASSES, class_weights, CLASS_WEIGHTS
+from plasticc.constants import OBJECT_ID, CLASSES, CLASS_WEIGHTS
 
 PRED_99_AVG = 0.14
 
@@ -161,13 +161,12 @@ def process_meta(filename):
     meta_df = pd.concat([meta_df, pd.DataFrame(meta_dict, index=meta_df.index)], axis=1)
     return meta_df
 
+OOF_PRED_COLS = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
+def make_oof_pred_df(oof_preds, columns=OOF_PRED_COLS):
+    return pd.DataFrame(oof_preds, columns=columns).add_prefix('class_')
 
-def make_oof_pred_df(oof_preds):
-    OOF_PRED_COLS = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
-    return pd.DataFrame(oof_preds, columns=OOF_PRED_COLS)
 
-
-def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=class_weights):
+def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
     """
     refactor from
     @author olivier https://www.kaggle.com/ogrellier
@@ -211,7 +210,7 @@ ILLEGAL_FNAMES = ['target', OBJECT_ID, 'hostgal_specz',
                   ]
 
 
-def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=class_weights, max_n_to_delete=None, order=-1):
+def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, max_n_to_delete=None, order=-1):
     '''if order is -1 try deleting least important features first.'''
     if max_n_to_delete is None:
         max_n_to_delete = len(sorted_fnames) - 1
@@ -226,12 +225,13 @@ def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=class_weights, ma
 
 
 def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class_weights=CLASS_WEIGHTS,
-                                   nr_fold=5, random_state=1):
+                                   nr_fold=5, random_state=1, sweights=None):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
-    # Compute weights
-    w = y.value_counts()
-    weights = {i: np.sum(w) / w[i] for i in w.index}
+    if sweights is None:
+        # Compute weights
+        w = y.value_counts()
+        sweights = {i: np.sum(w) / w[i] for i in w.index}
 
     clfs = []
     importances = pd.DataFrame()
@@ -251,7 +251,7 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
             eval_metric=lgbm_multi_weighted_logloss,
             verbose=-1,
             early_stopping_rounds=50,
-            sample_weight=trn_y.map(weights)
+            sample_weight=trn_y.map(sweights)
         )
         clfs.append(clf)
 
@@ -268,7 +268,8 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
                                    classes=classes, class_weights=class_weights)
     print(f'OOF:{score:.4f} n_folds={nr_fold}, nfeatures={full_train.shape[1]}')
     df_importances = agg_importances(importances)
-    return clfs, score, df_importances, oof_preds
+    oof_df = make_oof_pred_df(oof_preds, columns=clf.classes_)
+    return clfs, score, df_importances, oof_df
 
 
 from sklearn.metrics import log_loss

@@ -50,16 +50,9 @@ def plot_confusion_matrix(cm, classes,
     plt.tight_layout()
 
 def build_and_plot_cm(y, oof_preds, data_dir=DATA_DIR):
-    unique_y = np.unique(y)
-    class_map = dict()
-    for i, val in enumerate(unique_y):
-        class_map[val] = i
-    y_map = np.array([class_map[val] for val in y])
-
-    # Compute confusion matrix
-    cnf_matrix = confusion_matrix(y_map, np.argmax(oof_preds, axis=-1))
+    cnf_matrix = make_cnf_matrix(oof_preds, y)
     np.set_printoptions(precision=2)
-    sample_sub = pd.read_csv(DATA_DIR / 'sample_submission.csv')
+    sample_sub = pd.read_csv(data_dir / 'sample_submission.csv')
     class_names = list(sample_sub.columns[1:-1])
     del sample_sub;
     gc.collect()
@@ -69,6 +62,18 @@ def build_and_plot_cm(y, oof_preds, data_dir=DATA_DIR):
     foo = plot_confusion_matrix(cnf_matrix, classes=class_names, normalize=True,
                                 title='Confusion matrix')
     return foo
+
+
+def make_cnf_matrix(oof_preds, y):
+    unique_y = np.unique(y)
+    class_map = dict()
+    for i, val in enumerate(unique_y):
+        class_map[val] = i
+    y_map = np.array([class_map[val] for val in y])
+    # Compute confusion matrix
+    cnf_matrix = confusion_matrix(y_map, np.argmax(oof_preds, axis=-1))
+    return cnf_matrix
+
 
 classes = ['class_6', 'class_15', 'class_16', 'class_42', 'class_52', 'class_53',
          'class_62', 'class_64', 'class_65', 'class_67', 'class_88', 'class_90',
