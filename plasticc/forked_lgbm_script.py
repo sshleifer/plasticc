@@ -167,11 +167,7 @@ def make_oof_pred_df(oof_preds, columns=OOF_PRED_COLS):
 
 
 def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
-    """
-    refactor from
-    @author olivier https://www.kaggle.com/ogrellier
-    multi logloss for PLAsTiCC challenge
-    """
+    """Refactor from @author olivier https://www.kaggle.com/ogrellier."""
     y_p = y_preds.reshape(y_true.shape[0], len(classes), order='F')
     # Trasform y_true in dummies
     y_ohe = pd.get_dummies(y_true)
@@ -194,8 +190,8 @@ def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS
 
 
 def lgbm_multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
-    """refactor from olivier.multi logloss for PLAsTiCC challenge."""
-    loss = multi_weighted_logloss(y_true, y_preds, classes, class_weights)
+    """Refactor from olivier.multi logloss for PLAsTiCC challenge."""
+    loss = multi_weighted_logloss(y_true, y_preds, classes=classes, class_weights=class_weights)
     return 'wloss', loss, False
 
 
