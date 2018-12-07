@@ -45,13 +45,20 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
 
 
 import funcy
-def sub_from_dir(feat_dir, clfs, fnames, save_path=None):
+def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None):
     preds = []
-    chunk_paths = glob.glob(f'{feat_dir}/*.mp')
+    dists = []
+    chunk_paths = sorted(glob.glob(f'{feat_dir}/*.mp'))
     for pth in tqdm_notebook(chunk_paths):
         test_feat_df = pd.read_msgpack(pth).rename(columns=funcy.flip(MASSIVE_RENAMER))
         preds_df = make_pred_df(clfs, fnames, test_feat_df.reset_index()).set_index(OBJECT_ID)
         preds.append(preds_df)
+        if dist_sub is not None:
+            dist = compare_subs(preds_df, dist_sub)
+            dists[pth] = dist
+            if dist > .7:
+                print(f'{pth}: distance: {dist:.3f}')
+
     df = pd.concat(preds)
     class99 = GenUnknown(df)
     df['class_99'] = class99
