@@ -16,7 +16,7 @@ from datetime import datetime as dt
 
 import os
 
-from plasticc.constants import OBJECT_ID, CLASSES, CLASS_WEIGHTS
+from plasticc.constants import OBJECT_ID, CLASSES, CLASS_WEIGHTS, BEST_SWEIGHTS
 
 PRED_99_AVG = 0.14
 
@@ -234,7 +234,7 @@ def smoteAdataset(Xig_train, yig_train, Xig_test, yig_test):
 
 def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
                                    class_weights=CLASS_WEIGHTS,
-                                   nr_fold=5, random_state=1, sweights=None, smote=False):
+                                   nr_fold=5, random_state=1, sweights=BEST_SWEIGHTS, smote=False):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
     if sweights is None:
