@@ -49,15 +49,15 @@ def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None):
     preds = []
     dists = []
     chunk_paths = sorted(glob.glob(f'{feat_dir}/*.mp'))
-    for pth in tqdm_notebook(chunk_paths):
-        test_feat_df = pd.read_msgpack(pth).rename(columns=funcy.flip(MASSIVE_RENAMER))
+    for path in tqdm_notebook(chunk_paths):
+        test_feat_df = pd.read_msgpack(path).rename(columns=funcy.flip(MASSIVE_RENAMER))
         preds_df = make_pred_df(clfs, fnames, test_feat_df.reset_index()).set_index(OBJECT_ID)
         preds.append(preds_df)
         if dist_sub is not None:
             dist = compare_subs(preds_df, dist_sub)
-            dists[pth] = dist
+            dists[path] = dist
             if dist > .7:
-                print(f'{pth}: distance: {dist:.3f}')
+                print(f'{path}: distance: {dist:.3f}')
 
     df = pd.concat(preds)
     class99 = GenUnknown(df)
@@ -174,12 +174,12 @@ def msg_pack_to_csv(path):
     return new_path
 
 
-def compare_subs(sub1, sub2, n=300):
-    deltas = sub1.sort_values('object_id').tail(n) - sub2.sort_values('object_id').tail(n)
-    by_class = deltas.abs().describe()
-    overall = deltas.stack().abs().describe()
-    by_class.loc['OVERALL'] = overall
-    return by_class
+# def compare_subs(sub1, sub2, n=300):
+#     deltas = sub1.sort_values('object_id').tail(n) - sub2.sort_values('object_id').tail(n)
+#     by_class = deltas.abs().describe()
+#     overall = deltas.stack().abs().describe()
+#     by_class.loc['OVERALL'] = overall
+#     return by_class
 
 
 def mn_compare_df(uneven, best):

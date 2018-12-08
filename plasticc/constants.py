@@ -342,8 +342,20 @@ def gen_sw_experiments(configs):
         weights.append(dict(sweights=sw, class_weights=cw))
     return weights
 
-cw_res = []
-for i,c in enumerate(cw_res):
-    cw_res[-1].to_msgpack(f'oof_preds/config_{i}_10fold.mp')
-    lg
 
+BEST_SWEIGHTS = {
+    90: 3.3594,
+    42: 19.74,
+    65: 24.0,
+    16: 25.48,
+    15: 95.12,
+    62: 48.64,
+    88: 63.63,
+    92: 98.51,
+    67: 113.19,
+    52: 385.98,
+    95: 403.62,
+    6: 467.76,
+    64: 461.64,
+    53: 2354.4
+}

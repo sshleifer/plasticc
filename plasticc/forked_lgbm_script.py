@@ -27,7 +27,7 @@ import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 import numpy as np  # linear algebra
 
 np.warnings.filterwarnings('ignore')
-
+from imblearn.over_sampling import SMOTE
 from sklearn.model_selection import StratifiedKFold
 from tsfresh.feature_extraction import extract_features
 from lightgbm import LGBMClassifier
@@ -161,7 +161,10 @@ def process_meta(filename):
     meta_df = pd.concat([meta_df, pd.DataFrame(meta_dict, index=meta_df.index)], axis=1)
     return meta_df
 
+
 OOF_PRED_COLS = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
+
+
 def make_oof_pred_df(oof_preds, columns=OOF_PRED_COLS):
     return pd.DataFrame(oof_preds, columns=columns).add_prefix('class_')
 
@@ -205,7 +208,8 @@ ILLEGAL_FNAMES = ['target', OBJECT_ID, 'hostgal_specz',
                   ]
 
 
-def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, max_n_to_delete=None, order=-1):
+def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, max_n_to_delete=None,
+           order=-1):
     '''if order is -1 try deleting least important features first.'''
     if max_n_to_delete is None:
         max_n_to_delete = len(sorted_fnames) - 1
@@ -218,9 +222,19 @@ def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, ma
         scores[i] = score
     return scores
 
+def add_jims_features():
+    pass
 
-def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class_weights=CLASS_WEIGHTS,
-                                   nr_fold=5, random_state=1, sweights=None):
+
+def smoteAdataset(Xig_train, yig_train, Xig_test, yig_test):
+    sm = SMOTE(random_state=2)
+    Xig_train_res, yig_train_res = sm.fit_sample(Xig_train, yig_train.ravel())
+    return Xig_train_res, pd.Series(yig_train_res), Xig_test, pd.Series(yig_test)
+
+
+def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
+                                   class_weights=CLASS_WEIGHTS,
+                                   nr_fold=5, random_state=1, sweights=None, smote=False):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
     if sweights is None:
@@ -238,6 +252,11 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
     for fold_, (trn_, val_) in tqdm_notebook(enumerate(folds.split(y, y)), total=nr_fold):
         trn_x, trn_y = full_train.iloc[trn_], y.iloc[trn_]
         val_x, val_y = full_train.iloc[val_], y.iloc[val_]
+        if smote:
+            trn_xa, trn_y, val_xa, val_y = smoteAdataset(
+                trn_x.values, trn_y.values, val_x.values, val_y.values)
+            trn_x = pd.DataFrame(data=trn_xa, columns=trn_x.columns)
+            val_x = pd.DataFrame(data=val_xa, columns=val_x.columns)
 
         clf = LGBMClassifier(**params)
         loss_fn = lambda y, ypred: lgbm_multi_weighted_logloss(
@@ -266,7 +285,9 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
     print(f'OOF:{score:.4f} n_folds={nr_fold}, nfeat={full_train.shape[1]}')
     normal_weight_score = multi_weighted_logloss(y, oof_preds)
     if class_weights != CLASS_WEIGHTS:
-        print(f'OOF Default weights:{normal_weight_score:.4f} n_folds={nr_fold}, nfeat={full_train.shape[1]}')
+        print(
+            f'OOF Default weights:{normal_weight_score:.4f} n_folds={nr_fold}, '
+            f'nfeat={full_train.shape[1]}')
     df_importances = agg_importances(importances)
     oof_df = make_oof_pred_df(oof_preds, columns=clf.classes_)
     return clfs, score, df_importances, oof_df, normal_weight_score
