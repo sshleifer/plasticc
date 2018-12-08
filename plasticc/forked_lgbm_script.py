@@ -246,7 +246,7 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
         clf.fit(
             trn_x, trn_y,
             eval_set=[(trn_x, trn_y), (val_x, val_y)],
-            eval_metric=lgbm_multi_weighted_logloss,
+            eval_metric=loss_fn,
             verbose=-1,
             early_stopping_rounds=50,
             sample_weight=trn_y.map(sweights)
