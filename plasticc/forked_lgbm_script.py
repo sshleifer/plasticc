@@ -220,7 +220,7 @@ def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, ma
 
 
 def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class_weights=CLASS_WEIGHTS,
-                                   nr_fold=5, random_state=1, sweights=None):
+                                   nr_fold=5, random_state=1, sweights=None, use_cw_):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
     if sweights is None:
@@ -254,7 +254,6 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
         clfs.append(clf)
 
         oof_preds[val_, :] = clf.predict_proba(val_x, num_iteration=clf.best_iteration_)
-        # fold_loss = multi_weighted_logloss(val_y, oof_preds[val_, :], CLASSES, class_weights)
         imp_df = pd.DataFrame({
             'feature': full_train.columns,
             'gain': clf.feature_importances_,
@@ -265,12 +264,12 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class
     score = multi_weighted_logloss(y_true=y, y_preds=oof_preds,
                                    classes=classes, class_weights=class_weights)
     print(f'OOF:{score:.4f} n_folds={nr_fold}, nfeat={full_train.shape[1]}')
+    normal_weight_score = multi_weighted_logloss(y, oof_preds)
     if class_weights != CLASS_WEIGHTS:
-        normal_weight_score = multi_weighted_logloss(y, oof_preds)
         print(f'OOF Default weights:{normal_weight_score:.4f} n_folds={nr_fold}, nfeat={full_train.shape[1]}')
     df_importances = agg_importances(importances)
     oof_df = make_oof_pred_df(oof_preds, columns=clf.classes_)
-    return clfs, score, df_importances, oof_df
+    return clfs, score, df_importances, oof_df, normal_weight_score
 
 
 from sklearn.metrics import log_loss
@@ -450,74 +449,3 @@ def process_test(clfs, features, featurize_configs, train_mean,
 
     preds_df.to_csv(filename, header=False, mode='a', index=False)
     return
-
-
-def main(argc, argv):
-    meta_train = process_meta(DATA_DIR / 'training_set_metadata.csv')
-
-    train = pd.read_csv(DATA_DIR / 'training_set.csv', dtype=DTYPES)
-    full_train = featurize(train, meta_train, aggs, fcp)
-
-    if 'target' in full_train:
-        y = full_train['target']
-        del full_train['target']
-
-    classes = sorted(y.unique())
-    # Taken from Giba's topic : https://www.kaggle.com/titericz
-    # https://www.kaggle.com/c/PLAsTiCC-2018/discussion/67194
-    # with Kyle Boone's post https://www.kaggle.com/kyleboone
-    class_weights = {c: 1 for c in classes}
-    class_weights.update({c: 2 for c in [64, 15]})
-    print('Unique CLASSES : {}, {}'.format(len(classes), classes))
-    # if len(np.unique(y_true)) > 14:
-    #    CLASSES.append(99)
-    #    CLASS_WEIGHTS[99] = 2
-
-    if 'object_id' in full_train:
-        oof_df = full_train[['object_id']]
-        del full_train['object_id']
-        # del full_train['distmod']
-        del full_train['hostgal_specz']
-        del full_train['ra'], full_train['decl'], full_train['gal_l'], full_train['gal_b']
-        del full_train['ddf']
-
-    train_mean = full_train.mean(axis=0)
-    # train_mean.to_hdf('train_data.hdf5', 'data')
-    pd.set_option('display.max_rows', 500)
-    print(full_train.describe().T)
-    # import pdb; pdb.set_trace()
-    full_train.fillna(0, inplace=True)
-
-    eval_func = partial(lgbm_modeling_cross_validation,
-                        full_train=full_train,
-                        y=y,
-                        classes=classes,
-                        class_weights=class_weights,
-                        nr_fold=5,
-                        random_state=1)
-
-    # modeling from CV
-    clfs, score, importance_df, _ = eval_func(LGB_PARAMS)
-    date_str = dt.now().strftime('%Y-%m-%d-%H-%M')
-    imp_save_path = f'subm_{score:.6f}_{date_str}.mp'
-    importance_df.to_msgpack(imp_save_path)
-
-    sub_save_path = f'subm_{score:.6f}_{date_str}.csv'
-    print(f'save to {sub_save_path}')
-    # TEST
-    process_test(clfs,
-                 features=full_train.columns,
-                 featurize_configs={'aggs': aggs, 'fcp': fcp},
-                 train_mean=train_mean,
-                 filename=sub_save_path,
-                 chunksize=5000000)
-
-    z = pd.read_csv(sub_save_path)
-    print("Shape BEFORE grouping: {}".format(z.shape))
-    z = z.groupby('object_id').mean()
-    print("Shape AFTER grouping: {}".format(z.shape))
-    z.to_csv('single_{}'.format(sub_save_path), index=True)
-
-
-if __name__ == '__main__':
-    main(len(sys.argv), sys.argv)
