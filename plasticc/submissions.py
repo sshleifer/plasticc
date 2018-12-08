@@ -174,14 +174,8 @@ def msg_pack_to_csv(path):
     return new_path
 
 
-# def compare_subs(sub1, sub2, n=300):
-#     deltas = sub1.sort_values('object_id').tail(n) - sub2.sort_values('object_id').tail(n)
-#     by_class = deltas.abs().describe()
-#     overall = deltas.stack().abs().describe()
-#     by_class.loc['OVERALL'] = overall
-#     return by_class
-
 
 def mn_compare_df(uneven, best):
-    return pd.DataFrame(dict(delta=uneven.mean() - best.mean(), orig=best.mean())).round(3).sort_values(
-        'orig', ascending=False)
+    """Show sub means."""
+    return pd.DataFrame(dict(delta=uneven.mean() - best.mean(), a=uneven.mean(), b=best.mean())).sort_values(
+        'delta', ascending=False).round(3)
