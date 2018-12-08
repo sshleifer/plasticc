@@ -220,7 +220,7 @@ def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, ma
 
 
 def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES, class_weights=CLASS_WEIGHTS,
-                                   nr_fold=5, random_state=1, sweights=Noneg):
+                                   nr_fold=5, random_state=1, sweights=None):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
     if sweights is None:
