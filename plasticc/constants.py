@@ -359,3 +359,9 @@ BEST_SWEIGHTS = {
     64: 461.64,
     53: 2354.4
 }
+
+JIM_FNAMES = [
+    'outlierScore', 'hipd', 'lipd', 'highEnergy_transitory_1.0_TF',
+    'highEnergy_transitory_1.5_TF', 'lowEnergy_transitory_1.0_TF',
+    'lowEnergy_transitory_1.5_TF'
+]
