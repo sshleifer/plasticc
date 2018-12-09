@@ -27,6 +27,7 @@ def add_dope_features(xdf10):
     xdf10['min_over_max_fband'] = xdf10['max_fluxband'] / xdf10['min_fluxband']
     xdf10['det_flux_max_over_min'] = xdf10['det_flux_max'] / xdf10['det_flux_min']
     xdf10['max_fluxband_times_flux_mean'] = xdf10['flux_mean'] * xdf10['max_fluxband']
+    xdf10['flux__longest_strike_above_mean_times_sq_dist'] = xdf10['sq_dist'] * xdf10['flux__longest_strike_above_mean']
 
 
 def add_ratio_inputs(xdf10, ratio_inputs):
@@ -35,6 +36,7 @@ def add_ratio_inputs(xdf10, ratio_inputs):
         xdf10[f'{c}_times_sq_dist'] = xdf10[c] * xdf10['sq_dist']
         xdf10[f'{c}_over_det_min'] = xdf10[c] / xdf10['det_flux_min']
         xdf10[f'{c}_over_det_max'] = xdf10[c] / xdf10['det_flux_max']
+
     return xdf10
 
 
