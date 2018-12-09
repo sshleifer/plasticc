@@ -1,3 +1,4 @@
+import numpy as np
 import os
 from tsfresh import extract_features
 import funcy
@@ -20,6 +21,12 @@ def flatten_cols(arg_df, sep='_'):
     df = arg_df.copy()
     df.columns = df.columns.map(lambda x: flatten(x, sep=sep))
     return df
+
+
+def add_dope_features(xdf10):
+    xdf10['min_over_max_fband'] = xdf10['max_fluxband'] / xdf10['min_fluxband']
+    xdf10['det_flux_max_over_min'] = xdf10['det_flux_max'] / xdf10['det_flux_min']
+    xdf10['max_fluxband_times_flux_mean'] = xdf10['flux_mean'] * xdf10['max_fluxband']
 
 
 def make_fluxband_idx_feats(train):
@@ -58,6 +65,7 @@ def make_dec4_feats(train):
 def idx_renamer(idx, rename_dct): return pd.Index([rename_dct.get(x, x) for x in idx])
 
 def make_hostgal_ratio_feats(xdf4):
+    """Useless I think, could try again."""
     xdf4['hostgal_photoz_certain_ratio'] = (xdf4['hostgal_photoz'] / xdf4['hostgal_photoz_certain'])
     xdf4['hostgal_err_ratio'] = xdf4['hostgal_photoz_err'] / xdf4['hostgal_photoz']
     xdf4['hostgal_err_certain'] = xdf4['hostgal_photoz_err'] / xdf4['hostgal_photoz']
@@ -177,3 +185,37 @@ def fix_sq_colnames(x):
 def zip_to_series(a,b):
     assert len(a) == len(b)
     return pd.Series(funcy.zipdict(a,b))
+
+
+def wt_test(sub1, sub2, y):
+    wt = np.arange(0, 1. , .01); wt
+    scores = {}
+    for w in wt:
+        preds = (sub1 * w) +  (sub2 * (1-w))
+        scores[w] = multi_weighted_logloss(y, preds.values)
+    scores = pd.Series(scores)
+    print(f'best weight for sub1: {scores.idxmin():.2f} for OOF: {scores.min():.4f} ')
+    return scores
+
+
+def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
+    """Refactor from @author olivier https://www.kaggle.com/ogrellier."""
+    y_p = y_preds.reshape(y_true.shape[0], len(classes), order='F')
+    # Trasform y_true in dummies
+    y_ohe = pd.get_dummies(y_true)
+    # Normalize rows and limit y_preds to 1e-15, 1-1e-15
+    y_p = np.clip(a=y_p, a_min=1e-15, a_max=1 - 1e-15)
+    # Transform to log
+    y_p_log = np.log(y_p)
+    # Get the log for ones, .values is used to drop the index of DataFrames
+    # Exclude class 99 for now, since there is no class99 in the training set
+    # we gave a special process for that class
+    y_log_ones = np.sum(y_ohe.values * y_p_log, axis=0)
+    # Get the number of positives for each class
+    nb_pos = y_ohe.sum(axis=0).values.astype(float)
+    # Weight average and divide by the number of positives
+    class_arr = np.array([class_weights[k] for k in sorted(class_weights.keys())])
+    y_w = y_log_ones * class_arr / nb_pos
+
+    loss = - np.sum(y_w) / np.sum(class_arr)
+    return loss

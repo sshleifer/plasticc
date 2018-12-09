@@ -4,7 +4,7 @@ from functools import partial
 from sklearn.model_selection import StratifiedKFold
 from xgboost import XGBClassifier
 
-from plasticc.forked_lgbm_script import multi_weighted_logloss
+from plasticc.helpers import multi_weighted_logloss
 
 
 def xgb_multi_weighted_logloss(y_predicted, y_true, classes, class_weights):

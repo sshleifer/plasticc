@@ -10,18 +10,15 @@ https://www.kaggle.com/iprapas/ideas-from-kernels-and-discussion-lb-1-135
 
 import gc
 import glob
-import sys
 import time
-from datetime import datetime as dt
 
 import os
 
-from plasticc.constants import OBJECT_ID, CLASSES, CLASS_WEIGHTS, BEST_SWEIGHTS
+
 
 PRED_99_AVG = 0.14
 
 gc.enable()
-from functools import partial
 
 import pandas as pd  # data processing, CSV file I/O (e.g. pd.read_csv)
 import numpy as np  # linear algebra
@@ -34,7 +31,9 @@ from lightgbm import LGBMClassifier
 from tqdm import *
 from numba import jit
 
-from .constants import DATA_DIR, DTYPES, aggs, fcp, LGB_PARAMS, TEST_SET_SIZE
+from .constants import DATA_DIR, DTYPES, LGB_PARAMS, TEST_SET_SIZE
+from .constants import OBJECT_ID, CLASSES, CLASS_WEIGHTS, BEST_SWEIGHTS
+from .helpers import multi_weighted_logloss
 
 
 @jit
@@ -169,29 +168,6 @@ def make_oof_pred_df(oof_preds, columns=OOF_PRED_COLS):
     return pd.DataFrame(oof_preds, columns=columns).add_prefix('class_')
 
 
-def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
-    """Refactor from @author olivier https://www.kaggle.com/ogrellier."""
-    y_p = y_preds.reshape(y_true.shape[0], len(classes), order='F')
-    # Trasform y_true in dummies
-    y_ohe = pd.get_dummies(y_true)
-    # Normalize rows and limit y_preds to 1e-15, 1-1e-15
-    y_p = np.clip(a=y_p, a_min=1e-15, a_max=1 - 1e-15)
-    # Transform to log
-    y_p_log = np.log(y_p)
-    # Get the log for ones, .values is used to drop the index of DataFrames
-    # Exclude class 99 for now, since there is no class99 in the training set
-    # we gave a special process for that class
-    y_log_ones = np.sum(y_ohe.values * y_p_log, axis=0)
-    # Get the number of positives for each class
-    nb_pos = y_ohe.sum(axis=0).values.astype(float)
-    # Weight average and divide by the number of positives
-    class_arr = np.array([class_weights[k] for k in sorted(class_weights.keys())])
-    y_w = y_log_ones * class_arr / nb_pos
-
-    loss = - np.sum(y_w) / np.sum(class_arr)
-    return loss
-
-
 def lgbm_multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
     """Refactor from olivier.multi logloss for PLAsTiCC challenge."""
     loss = multi_weighted_logloss(y_true, y_preds, classes=classes, class_weights=class_weights)
@@ -231,10 +207,11 @@ def smoteAdataset(Xig_train, yig_train, Xig_test, yig_test):
     Xig_train_res, yig_train_res = sm.fit_sample(Xig_train, yig_train.ravel())
     return Xig_train_res, pd.Series(yig_train_res), Xig_test, pd.Series(yig_test)
 
-
+from sklearn.preprocessing import StandardScaler
 def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
                                    class_weights=CLASS_WEIGHTS,
-                                   nr_fold=5, random_state=1, sweights=BEST_SWEIGHTS, smote=False):
+                                   nr_fold=5, random_state=1, sweights=BEST_SWEIGHTS, smote=False,
+                                   standard_scaler=False):
     full_train = full_train.drop(ILLEGAL_FNAMES, axis=1, errors='ignore')
     # assert 'distmod' in full_train.columns
     if sweights is None:
@@ -249,6 +226,11 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
                             random_state=random_state)
 
     oof_preds = np.zeros((len(full_train), np.unique(y).shape[0]))
+    if standard_scaler:
+        scl = StandardScaler()
+        full_train = pd.DataFrame(scl.fit_transform(full_train.fillna(0)),
+                                  index=full_train.index,
+                                  columns=full_train.columns)
     for fold_, (trn_, val_) in tqdm_notebook(enumerate(folds.split(y, y)), total=nr_fold):
         trn_x, trn_y = full_train.iloc[trn_], y.iloc[trn_]
         val_x, val_y = full_train.iloc[val_], y.iloc[val_]

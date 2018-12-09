@@ -17,6 +17,19 @@ def read_importances(pth='lgbm_importances.csv'):
 def agg_importances(df):
     return df.drop_duplicates(['feature'], keep='first').set_index('feature')['mean_gain'].sort_values(ascending=False)
 
+
+import matplotlib.pyplot as plt
+
+import seaborn as sns
+def plot_oid(train, oid):
+    meta = meta_train[meta_train.object_id == oid].iloc[0]
+    tit = f'id={meta.object_id} class={meta.target} photoz={meta.hostgal_photoz}'
+
+    pl_data = train[train.object_id == oid]
+    sns.scatterplot(x='mjd', y='flux', data=pl_data, hue='passband', )
+    plt.title(tit)
+
+
 def plot_confusion_matrix(cm, classes,
                           normalize=False,
                           title='Confusion matrix',
