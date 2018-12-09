@@ -29,6 +29,16 @@ def add_dope_features(xdf10):
     xdf10['max_fluxband_times_flux_mean'] = xdf10['flux_mean'] * xdf10['max_fluxband']
 
 
+def add_ratio_inputs(xdf10, ratio_inputs):
+    add_dope_features(xdf10)
+    for c in ratio_inputs:
+        xdf10[f'{c}_times_sq_dist'] = xdf10[c] * xdf10['sq_dist']
+        xdf10[f'{c}_over_det_min'] = xdf10[c] / xdf10['det_flux_min']
+        xdf10[f'{c}_over_det_max'] = xdf10[c] / xdf10['det_flux_max']
+    return xdf10
+
+
+
 def make_fluxband_idx_feats(train):
     gb = train.groupby((OBJECT_ID, PASSBAND))
     passband_det_means = gb.detected.mean().unstack().add_prefix('mn_detected_')
