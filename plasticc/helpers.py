@@ -24,6 +24,7 @@ def flatten_cols(arg_df, sep='_'):
 
 
 def add_dope_features(xdf10):
+    xdf10['sq_dist'] = xdf10['hostgal_photoz'] ** 2
     xdf10['min_over_max_fband'] = xdf10['max_fluxband'] / xdf10['min_fluxband']
     xdf10['det_flux_max_over_min'] = xdf10['det_flux_max'] / xdf10['det_flux_min']
     xdf10['max_fluxband_times_flux_mean'] = xdf10['flux_mean'] * xdf10['max_fluxband']
