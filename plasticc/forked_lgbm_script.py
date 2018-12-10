@@ -33,7 +33,8 @@ from numba import jit
 
 from .constants import DATA_DIR, DTYPES, LGB_PARAMS, TEST_SET_SIZE
 from .constants import OBJECT_ID, CLASSES, CLASS_WEIGHTS, BEST_SWEIGHTS
-from .helpers import multi_weighted_logloss
+from .helpers import multi_weighted_logloss, get_default_index
+
 
 
 @jit
@@ -163,9 +164,10 @@ def process_meta(filename):
 
 OOF_PRED_COLS = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
 
+DEFAULT_INDEX = get_default_index()
 
-def make_oof_pred_df(oof_preds, columns=OOF_PRED_COLS):
-    return pd.DataFrame(oof_preds, columns=columns).add_prefix('class_')
+def make_oof_pred_df(oof_preds, columns=OOF_PRED_COLS, index=DEFAULT_INDEX):
+    return pd.DataFrame(oof_preds, columns=columns, index=index).add_prefix('class_')
 
 
 def lgbm_multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):

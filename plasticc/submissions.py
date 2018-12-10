@@ -24,26 +24,6 @@ from .forked_lgbm_script import make_pred_df
 from .constants import MASSIVE_RENAMER
 
 
-def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
-    for pth in tqdm_notebook(chunk_paths):
-        i_c = os.path.basename(pth)[:-3]
-        feat_cache_path = f'{feat_dir}/{i_c}.mp'
-        df = pd.read_msgpack(pth)
-        feats = pd.read_msgpack(feat_cache_path).replace(0, np.nan).set_index(OBJECT_ID)
-        if feature_add_fn is not None:
-            test_feat_df = feature_add_fn(df, feats)
-        else:
-            test_feat_df = feats
-        preds_df = make_pred_df(clfs, fnames_final, test_feat_df.reset_index())
-        if not os.path.exists(save_path):
-            preds_df[COL_ORDER].to_csv(save_path, index=False)
-        else:
-            preds_df[COL_ORDER].to_csv(save_path, header=False, mode='a', index=False)
-        test_feat_df.to_msgpack(f'feature_cache_nov_28/{i_c}.mp')
-        del preds_df, test_feat_df
-        gc.collect()
-
-
 def replacer(df, maxes):
     for c,v in maxes.items():
         if c in df.columns:
@@ -78,7 +58,10 @@ def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None, fillna=F
     if save_path is not None:
         if OBJECT_ID in df.columns:
             df = df.set_index(OBJECT_ID)
-        df.to_csv(save_path)
+        if save_path.endswith('mp'):
+            df.to_msgpack(save_path)
+        else:
+            df.to_csv(save_path)
         print(f'saved to {save_path}')
     return df
 

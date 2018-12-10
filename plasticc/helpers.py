@@ -53,6 +53,17 @@ def add_more_dope_features(xdf):
     for stat in ['flux_min', 'flux_max', 'flux_mean', 'flux_median', 'flux_std', 'flux_skew']:
         xdf[f'undet_over_det_{stat}'] = xdf[f'undet_{stat}'] / xdf[f'det_{stat}']
 
+import pickle
+def pickle_load(path):
+    with open(path, 'rb') as f:
+        return pickle.load(f)
+
+def get_default_index():
+    if os.path.exists('default_index.pkl'):
+        return pickle_load('default_index.pkl')
+    else:
+        return pickle_load('~/plasticc/default_index.pkl')
+
 
 def add_ratio_inputs(xdf10, ratio_inputs):
     add_dope_features(xdf10)
