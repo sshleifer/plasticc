@@ -53,11 +53,10 @@ def add_more_dope_features(xdf):
     for stat in ['flux_min', 'flux_max', 'flux_mean', 'flux_median', 'flux_std', 'flux_skew']:
         xdf[f'undet_over_det_{stat}'] = xdf[f'undet_{stat}'] / xdf[f'det_{stat}']
 
-    return xdf
-
 
 def add_ratio_inputs(xdf10, ratio_inputs):
     add_dope_features(xdf10)
+    add_more_dope_features(xdf10)
     for c in ratio_inputs:
         xdf10[f'{c}_times_sq_dist'] = xdf10[c] * xdf10['sq_dist']
         xdf10[f'{c}_over_det_min'] = xdf10[c] / xdf10['det_flux_min']
@@ -67,7 +66,15 @@ def add_ratio_inputs(xdf10, ratio_inputs):
     return xdf10
 
 
-def add_ratio_inputs2(xdf10, numerators, denoms):
+DEFAULT_DENOMS = ['0__cid_ce__normalize_True_times_sq_dist',
+       '0__fft_coefficient__coeff_0__attr_"abs"_times_sq_dist',
+       '5__fft_coefficient__coeff_0__attr_"abs"_times_sq_dist',
+       'flux__longest_strike_above_mean_times_sq_dist',
+       'flux_max_times_sq_dist', 'flux_w_mean_times_sq_dist',
+       'mjd_det__cid_ce__normalize_False', 'sq_dist']
+
+
+def add_ratio_inputs2(xdf10, numerators, denoms=DEFAULT_DENOMS):
     add_more_dope_features(xdf10)
     for c in numerators:
         for d in denoms:
