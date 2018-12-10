@@ -198,9 +198,6 @@ def my_rfe(x, y, sorted_fnames, classes=CLASSES, class_weights=CLASS_WEIGHTS, ma
         scores[i] = score
     return scores
 
-def add_jims_features():
-    pass
-
 
 def smoteAdataset(Xig_train, yig_train, Xig_test, yig_test):
     sm = SMOTE(random_state=2)
