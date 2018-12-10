@@ -45,7 +45,7 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
 
 def replacer(df, maxes):
     for c in df.columns:
-        df[c] = df[c].replace(np.inf, maxes[c]).astype(float)
+        df[c] = df[c].replace(np.inf, maxes[c]+1).astype(float)
     return df
 
 
