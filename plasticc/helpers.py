@@ -31,10 +31,7 @@ def add_dope_features(xdf10):
     xdf10['flux__longest_strike_above_mean_times_sq_dist'] = xdf10['sq_dist'] * xdf10['flux__longest_strike_above_mean']
 
 
-def add_more_dope_features(xdf):
-    for stat in ['flux_min', 'flux_max', 'flux_mean', 'flux_median', 'flux_std', 'flux_skew']:
-        xdf[f'undet_over_det_{stat}'] = xdf[f'undet_{stat}'] / xdf[f'det_{stat}']
-
+def _add_useless_median_features_(xdf):
     xdf['max_median_passband'] = xdf[['0__median', '1__median', '2__median',
                                       '3__median', '4__median', '5__median', ]].idxmax(1).str.slice(
         0, 1).astype(int)
@@ -46,6 +43,16 @@ def add_more_dope_features(xdf):
     xdf['median_2_over_5'] = xdf['2__median'] / xdf['5__median']
     xdf['median_2_over_4'] = xdf['2__median'] / xdf['4__median']
     xdf = xdf.join(more_feats)
+
+    xdf['flux_err_std_ratio'] = xdf['flux_std'] / xdf['flux_err_std']
+    xdf['flux_std_over_err_max'] = xdf['flux_std'] / xdf['flux_err_max']
+    xdf['flux_std_over_err_max'] = xdf['flux_std'] / xdf['flux_err_max']
+
+
+def add_more_dope_features(xdf):
+    for stat in ['flux_min', 'flux_max', 'flux_mean', 'flux_median', 'flux_std', 'flux_skew']:
+        xdf[f'undet_over_det_{stat}'] = xdf[f'undet_{stat}'] / xdf[f'det_{stat}']
+
     return xdf
 
 
@@ -57,7 +64,16 @@ def add_ratio_inputs(xdf10, ratio_inputs):
         xdf10[f'{c}_over_det_max'] = xdf10[c] / xdf10['det_flux_max']
         xdf10[f'{c}_over_det_mean'] = xdf10[c] / xdf10['det_flux_mean']
         xdf10[f'{c}_over_det_median'] = xdf10[c] / xdf10['det_flux_median']
+    return xdf10
 
+
+def add_ratio_inputs2(xdf10, numerators, denoms):
+    add_more_dope_features(xdf10)
+    for c in numerators:
+        for d in denoms:
+            if c == d:
+                continue
+            xdf10[f'{c}_over_{d}'] = xdf10[c] / xdf10[d]
 
     return xdf10
 

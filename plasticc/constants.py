@@ -353,5 +353,6 @@ KNOWN_BAD_FEATS =  [
     'flux__kurtosis_times_sq_dist',
     'undet_over_det_flux_mean',
     'undet_over_det_flux_median',
-
+    'flux_by_flux_ratio_sq0__linear_trend__attr_"stderr"_over_det_min_over_mjd_det__cid_ce__normalize_False',
+    '4__skewness_over_mjd_det__cid_ce__normalize_False'
 ]
