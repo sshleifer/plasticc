@@ -218,6 +218,8 @@ LGB_PARAMS = {
     'skip_drop': 0.44,
     'subsample': 0.75
 }
+DART_PARAMS = LGB_PARAMS.copy()
+DART_PARAMS['boosting_type'] = 'dart'
 BASE_AGGS = ['min', 'max', 'mean', 'median', 'std', 'skew']
 OBJECT_ID = 'object_id'
 OID = OBJECT_ID
