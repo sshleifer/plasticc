@@ -211,8 +211,30 @@ def wt_test(sub1, sub2, y):
     return scores
 
 
+def wt_test3(sub1, sub2, sub3, y, step=.03):
+    wt = np.round(np.arange(0, 1, step),2);
+    if 1 not in wt:
+        wt = list(wt)
+        wt.append(1)
+    scores = {}
+    for w1 in tqdm_notebook(wt):
+        for w2 in wt:
+            w3 = 1 - (w2 + w1)
+            if w3 < 0:
+                continue
+            preds = (sub1 * w1) + (sub2 * w2) + (sub3 * w3)
+            scores[(w1,w2,w3)] = multi_weighted_logloss(y, preds.values)
+    scores = pd.Series(scores)
+    print(f'best weights: {scores.idxmin()} for OOF: {scores.min():.4f} ')
+    return scores
+
+
+
+
 def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
     """Refactor from @author olivier https://www.kaggle.com/ogrellier."""
+    row_sum = y_preds.sum(1).reshape(y_preds.shape[0], 1)
+    y_preds = y_preds / row_sum
     y_p = y_preds.reshape(y_true.shape[0], len(classes), order='F')
     # Trasform y_true in dummies
     y_ohe = pd.get_dummies(y_true)

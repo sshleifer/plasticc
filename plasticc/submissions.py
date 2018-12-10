@@ -43,9 +43,15 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
         del preds_df, test_feat_df
         gc.collect()
 
+def replacer(df, maxes):
+    for c in df.columns:
+        df[c] = df[c].replace(np.inf, maxes[c]).astype(float)
+    return df
+
 
 import funcy
-def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None, fillna=False):
+def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None, fillna=False,
+                 maxes=None):
     preds = []
     dists = []
     chunk_paths = sorted(glob.glob(f'{feat_dir}/*.mp'))
@@ -53,6 +59,8 @@ def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None, fillna=F
         test_feat_df = pd.read_msgpack(path).rename(columns=funcy.flip(MASSIVE_RENAMER))
         if fillna:
             test_feat_df = test_feat_df.fillna(0)
+        if maxes is not None:
+            test_feat_df = replacer(test_feat_df, maxes)
         preds_df = make_pred_df(clfs, fnames, test_feat_df.reset_index()).set_index(OBJECT_ID)
         preds.append(preds_df)
         if dist_sub is not None:
