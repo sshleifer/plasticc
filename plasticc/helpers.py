@@ -30,9 +30,23 @@ def add_dope_features(xdf10):
     xdf10['max_fluxband_times_flux_mean'] = xdf10['flux_mean'] * xdf10['max_fluxband']
     xdf10['flux__longest_strike_above_mean_times_sq_dist'] = xdf10['sq_dist'] * xdf10['flux__longest_strike_above_mean']
 
-def add_more_dope_features(xdf10):
+
+def add_more_dope_features(xdf):
     for stat in ['flux_min', 'flux_max', 'flux_mean', 'flux_median', 'flux_std', 'flux_skew']:
-        xdf10[f'undet_over_det_{stat}'] = xdf10[f'undet_{stat}'] / xdf10[f'det_{stat}']
+        xdf[f'undet_over_det_{stat}'] = xdf[f'undet_{stat}'] / xdf[f'det_{stat}']
+
+    xdf['max_median_passband'] = xdf[['0__median', '1__median', '2__median',
+                                      '3__median', '4__median', '5__median', ]].idxmax(1).str.slice(
+        0, 1).astype(int)
+    xdf['max_median_val'] = xdf[['0__median', '1__median', '2__median',
+                                 '3__median', '4__median', '5__median', ]].max(1)
+    more_feats = xdf[['0__median', '1__median', '2__median',
+                      '3__median', '4__median', '5__median', ]].apply(
+        lambda x: x / xdf['max_median_val']).add_suffix('_over_max_median_val')
+    xdf['median_2_over_5'] = xdf['2__median'] / xdf['5__median']
+    xdf['median_2_over_4'] = xdf['2__median'] / xdf['4__median']
+    xdf = xdf.join(more_feats)
+    return xdf
 
 
 def add_ratio_inputs(xdf10, ratio_inputs):
@@ -43,6 +57,7 @@ def add_ratio_inputs(xdf10, ratio_inputs):
         xdf10[f'{c}_over_det_max'] = xdf10[c] / xdf10['det_flux_max']
         xdf10[f'{c}_over_det_mean'] = xdf10[c] / xdf10['det_flux_mean']
         xdf10[f'{c}_over_det_median'] = xdf10[c] / xdf10['det_flux_median']
+
 
     return xdf10
 
@@ -237,12 +252,20 @@ def wt_test3(sub1, sub2, sub3, y, step=.03):
     return scores
 
 
+def divide_by_rowsum(y_preds):
+    if isinstance(y_preds,pd.DataFrame):
+        row_sum = y_preds.sum(1)
+        return y_preds.apply(lambda x: x / row_sum)
+    else:
+        row_sum = y_preds.sum(1).reshape(y_preds.shape[0], 1)
+        return y_preds / row_sum
+
+
 
 
 def multi_weighted_logloss(y_true, y_preds, classes=CLASSES, class_weights=CLASS_WEIGHTS):
     """Refactor from @author olivier https://www.kaggle.com/ogrellier."""
-    # row_sum = y_preds.sum(1).reshape(y_preds.shape[0], 1)
-    # y_preds = y_preds / row_sum
+
     y_p = y_preds.reshape(y_true.shape[0], len(classes), order='F')
     # Trasform y_true in dummies
     y_ohe = pd.get_dummies(y_true)

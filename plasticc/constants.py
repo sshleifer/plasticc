@@ -347,3 +347,11 @@ JIM_FNAMES = [
     'highEnergy_transitory_1.5_TF', 'lowEnergy_transitory_1.0_TF',
     'lowEnergy_transitory_1.5_TF'
 ]
+
+
+KNOWN_BAD_FEATS =  [
+    'flux__kurtosis_times_sq_dist',
+    'undet_over_det_flux_mean',
+    'undet_over_det_flux_median',
+
+]

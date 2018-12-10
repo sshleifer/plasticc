@@ -43,11 +43,12 @@ def make_sub(chunk_paths, save_path, fnames_final, clfs, feature_add_fn):
         del preds_df, test_feat_df
         gc.collect()
 
+
 def replacer(df, maxes):
     for c,v in maxes.items():
-        df[c] = df[c].replace(np.inf, v+1).astype(float)
+        if c in df.columns:
+            df[c] = df[c].replace(np.inf, v+1).astype(float)
     return df
-
 
 
 

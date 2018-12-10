@@ -215,7 +215,8 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
         # Compute weights
         w = y.value_counts()
         sweights = {i: np.sum(w) / w[i] for i in w.index}
-
+    elif smote and sweights==BEST_SWEIGHTS:
+        print(f'WARNING: got BEST_SWEIGHTS and smote=True')
     clfs = []
     importances = pd.DataFrame()
     folds = StratifiedKFold(n_splits=nr_fold,
@@ -232,6 +233,7 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
         trn_x, trn_y = full_train.iloc[trn_], y.iloc[trn_]
         val_x, val_y = full_train.iloc[val_], y.iloc[val_]
         if smote:
+
             trn_xa, trn_y, val_xa, val_y = smoteAdataset(
                 trn_x.values, trn_y.values, val_x.values, val_y.values)
             trn_x = pd.DataFrame(data=trn_xa, columns=trn_x.columns)
