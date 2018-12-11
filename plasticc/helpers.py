@@ -1,9 +1,15 @@
-import numpy as np
 import os
 from tsfresh import extract_features
 import funcy
 import pandas as pd
 from tqdm import *
+
+from .constants import *
+import funcy
+import os
+import pandas as pd
+from tqdm import *
+from tsfresh import extract_features
 
 from .constants import *
 
@@ -29,6 +35,7 @@ def add_dope_features(xdf10):
     xdf10['det_flux_max_over_min'] = xdf10['det_flux_max'] / xdf10['det_flux_min']
     xdf10['max_fluxband_times_flux_mean'] = xdf10['flux_mean'] * xdf10['max_fluxband']
     xdf10['flux__longest_strike_above_mean_times_sq_dist'] = xdf10['sq_dist'] * xdf10['flux__longest_strike_above_mean']
+
 
 
 def _add_useless_median_features_(xdf):
@@ -58,6 +65,7 @@ def pickle_load(path):
     with open(path, 'rb') as f:
         return pickle.load(f)
 
+
 def get_default_index():
     if os.path.exists('default_index.pkl'):
         return pickle_load('default_index.pkl')
@@ -77,12 +85,14 @@ def add_ratio_inputs(xdf10, ratio_inputs):
     return xdf10
 
 
-DEFAULT_DENOMS = ['0__cid_ce__normalize_True_times_sq_dist',
-       '0__fft_coefficient__coeff_0__attr_"abs"_times_sq_dist',
-       '5__fft_coefficient__coeff_0__attr_"abs"_times_sq_dist',
-       'flux__longest_strike_above_mean_times_sq_dist',
-       'flux_max_times_sq_dist', 'flux_w_mean_times_sq_dist',
-       'mjd_det__cid_ce__normalize_False', 'sq_dist']
+DEFAULT_DENOMS = [
+   '0__cid_ce__normalize_True_times_sq_dist',
+   '0__fft_coefficient__coeff_0__attr_"abs"_times_sq_dist',
+   '5__fft_coefficient__coeff_0__attr_"abs"_times_sq_dist',
+   'flux__longest_strike_above_mean_times_sq_dist',
+   'flux_max_times_sq_dist', 'flux_w_mean_times_sq_dist',
+   'mjd_det__cid_ce__normalize_False', 'sq_dist'
+]
 
 
 def add_ratio_inputs2(xdf10, numerators, denoms=DEFAULT_DENOMS):
@@ -92,7 +102,6 @@ def add_ratio_inputs2(xdf10, numerators, denoms=DEFAULT_DENOMS):
             if c == d:
                 continue
             xdf10[f'{c}_over_{d}'] = xdf10[c] / xdf10[d]
-
     return xdf10
 
 
