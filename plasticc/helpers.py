@@ -28,6 +28,46 @@ def flatten_cols(arg_df, sep='_'):
     df.columns = df.columns.map(lambda x: flatten(x, sep=sep))
     return df
 
+import gc
+def ray_target_encode(train, col_groups, kf):
+    col_no = 0
+    for col in col_groups:
+        print('deal_probability: {}'.format(col))
+        if col != 'deal_probability':
+            vals = []
+            for train_inx, val_inx in kf.split(list(range(len(train)))):
+                gby = train.loc[train_inx, col + ['deal_probability']].groupby(col).agg(
+                    {'deal_probability': 'mean'}).reset_index()
+                colname = 'mean_attributed_{}'.format(str(col_no))
+                gby.columns = col + [colname]
+                gby[colname] = gby[colname].astype(np.float32)
+                val = train.loc[val_inx, col].reset_index(drop=False)
+                val = val.merge(gby, on=col, how='left')
+                del gby
+                gc.collect()
+                vals.append(val[['index', colname]])
+                del val
+                gc.collect()
+
+            cur_val = pd.concat(vals, axis=0).set_index('index')
+            cur_val.reindex(train.index)
+            train[colname] = cur_val[colname]
+            del cur_val, vals
+            gc.collect()
+        col_no += 1
+    col_no = 0
+    for col in col_groups:
+        colname = 'mean_attributed_{}'.format(str(col_no))
+        gby = train.loc[:, col + ['deal_probability']].groupby(col).agg(
+            {'deal_probability': 'mean'}).reset_index()
+        gby.columns = col + [colname]
+        gby[colname] = gby[colname].astype(np.float32)
+        test = test.merge(gby, how='left', on=col)
+        col_no += 1
+
+
+
+
 
 def add_dope_features(xdf10):
     xdf10['sq_dist'] = xdf10['hostgal_photoz'] ** 2
@@ -177,14 +217,12 @@ def difference_join(left_df, right_df):
 TSKW = dict(column_id=OBJECT_ID, column_sort='mjd')
 
 
-def add_features(chunk_paths, save_dir):
-    for pth in tqdm_notebook(chunk_paths):
-        i_c = os.path.basename(pth)[:-3]
-        feat_cache_path = f'{save_dir}/{i_c}.mp'
-        df = pd.read_msgpack(pth).reset_index()
-        feats = pd.read_msgpack(feat_cache_path)
-        test_feat_df = tsfresh_joiner(df, feats, NEW_PARS['flux'], disable_bar=False)
-
+def assign_feature_178(xdf13):
+    """Doesn't obviously help."""
+    num = ['flux_by_flux_ratio_sq1__quantile__q_0.7']
+    denom = ['2__quantile__q_0.9_over_det_min']
+    xdf14 = add_ratio_inputs2(xdf13, num, denom)
+    return xdf14
 
 def make_extra_ts_featurs(train, meta_train):
     feats = []
