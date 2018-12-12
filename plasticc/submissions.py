@@ -55,19 +55,22 @@ def sub_from_dir(feat_dir, clfs, fnames, save_path=None, dist_sub=None, fillna=F
     df = pd.concat(preds)
     class99 = GenUnknown(df)
     df['class_99'] = class99
+    if OBJECT_ID in df.columns:
+        df = df.set_index(OBJECT_ID)
+    try:
+        _save_sub(df, save_path)
+    except Exception:
+        print(f'couldnt save!')
+    return df
+
+
+def _save_sub(df, save_path):
     if save_path is not None:
-        if OBJECT_ID in df.columns:
-            df = df.set_index(OBJECT_ID)
         if save_path.endswith('mp'):
             df.to_msgpack(save_path)
         else:
             df.to_csv(save_path)
         print(f'saved to {save_path}')
-    return df
-
-
-
-
 
 def add_acor_feat(mock_tr, feat_df):
     acor_params = {'partial_autocorrelation': [{'lag': 1}, ]}
