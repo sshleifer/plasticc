@@ -3745,108 +3745,55 @@ features = ['mjd_size', 'flux_min', 'flux_max', 'flux_mean', 'flux_median',
            '5__fft_coefficient__coeff_1__attr__abs__y', '5__kurtosis_y',
            '5__skewness_y']
 
-def multi_weighted_logloss(y_ohe, y_p):
-    """
-    @author olivier https://www.kaggle.com/ogrellier
-    multi logloss for PLAsTiCC challenge
-    """
-    classes = [6, 15, 16, 42, 52, 53, 62, 64, 65, 67, 88, 90, 92, 95]
-    class_weight = {6: 1, 15: 2, 16: 1, 42: 1, 52: 1, 53: 1, 62: 1, 64: 2, 65: 1, 67: 1, 88: 1, 90: 1, 92: 1, 95: 1}
-    # Normalize rows and limit y_preds to 1e-15, 1-1e-15
-    y_p = np.clip(a=y_p, a_min=1e-15, a_max=1-1e-15)
-    # Transform to log
-    y_p_log = np.log(y_p)
-    # Get the log for ones, .values is used to drop the index of DataFrames
-    # Exclude class 99 for now, since there is no class99 in the training set 
-    # we gave a special process for that class
-    y_log_ones = np.sum(y_ohe * y_p_log, axis=0)
-    # Get the number of positives for each class
-    nb_pos = y_ohe.sum(axis=0).astype(float)
-    # Weight average and divide by the number of positives
-    class_arr = np.array([class_weight[k] for k in sorted(class_weight.keys())])
-    y_w = y_log_ones * class_arr / nb_pos    
-    loss = - np.sum(y_w) / np.sum(class_arr)
-    return loss
-
-def plot_confusion_matrix(cm, classes,
-                          normalize=False,
-                          title='Confusion matrix',
-                          cmap=plt.cm.Blues):
-    """
-    This function prints and plots the confusion matrix.
-    Normalization can be applied by setting `normalize=True`.
-    """
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-        print("Normalized confusion matrix")
-    else:
-        print('Confusion matrix, without normalization')
-
-    print(cm)
-
-    plt.imshow(cm, interpolation='nearest', cmap=cmap)
-    plt.title(title)
-    plt.colorbar()
-    tick_marks = np.arange(len(classes))
-    plt.xticks(tick_marks, classes, rotation=45)
-    plt.yticks(tick_marks, classes)
-
-    fmt = '.2f' if normalize else 'd'
-    thresh = cm.max() / 2.
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        plt.text(j, i, format(cm[i, j], fmt),
-                 horizontalalignment="center",
-                 color="white" if cm[i, j] > thresh else "black")
-
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label')
-    plt.savefig('confusion.png')
 
 def photoztodist(data) :
     return ((((((np.log((((data["hostgal_photoz"]) + (np.log((((data["hostgal_photoz"]) + (np.sqrt((np.log((np.maximum(((3.0)), ((((data["hostgal_photoz"]) * 2.0))))))))))))))))) + ((12.99870681762695312)))) + ((1.17613816261291504)))) * (3.0))
 
-fcp = {'fft_coefficient': [{'coeff': 0, 'attr': 'abs'},{'coeff': 1, 'attr': 'abs'}],'kurtosis' : None, 'skewness' : None}
+tsfresh_params = {
+    'fft_coefficient': [{'coeff': 0, 'attr': 'abs'}, {'coeff': 1, 'attr': 'abs'}],
+    'kurtosis' : None,
+    'skewness' : None
+}
 
-def get_inputs(data, metadata,slices=20):
-    agg_df_ts = None
-    agg_df_ts_detected = None
-    for i in range(slices):
-        uniqueids = data.object_id.unique()[i::slices]
-        sub = data[data.object_id.isin(uniqueids)].copy()
-        x = sub.groupby(['object_id','passband'])['mjd','flux'].diff().fillna(0)
-        x['object_id'] = sub.object_id
-        x['passband'] = sub.passband
-        x = x.groupby(['object_id','passband'])['mjd','flux'].cumsum().fillna(0)
-        x['object_id'] = sub.object_id
-        x['passband'] = sub.passband
-        x['detected'] = sub.detected
-        df_ts = extract_features(x, column_id='object_id', column_sort='mjd', column_kind='passband', column_value = 'flux', default_fc_parameters = fcp, n_jobs=4)
-        df_ts.index.rename('object_id',inplace=True)
-        df_ts.reset_index(drop=False,inplace=True)
-        df_ts_detected = extract_features(x.loc[(x.detected==1)], column_id='object_id', column_sort='mjd', column_kind='passband', column_value = 'flux', default_fc_parameters = fcp, n_jobs=4)
-        df_ts_detected.index.rename('object_id',inplace=True)
-        df_ts_detected.reset_index(drop=False,inplace=True)
-        if(agg_df_ts is None):
-            agg_df_ts = df_ts.copy()
-            agg_df_ts_detected = df_ts_detected.copy()
-        else:
-            agg_df_ts = pd.concat([agg_df_ts,df_ts.fillna(0)],sort=False)
-            agg_df_ts_detected = pd.concat([agg_df_ts_detected,df_ts_detected.fillna(0)],sort=False)
-        del df_ts, df_ts_detected, x, sub
-        gc.collect()
-    
-    for d in [0,1]:
+
+def make_diff_based_featurs(sub):
+    x = sub.groupby(['object_id', 'passband'])['mjd', 'flux'].diff().fillna(0)
+    x['object_id'] = sub.object_id
+    x['passband'] = sub.passband
+    x = x.groupby(['object_id', 'passband'])['mjd', 'flux'].cumsum().fillna(0)
+    x['object_id'] = sub.object_id
+    x['passband'] = sub.passband
+    x['detected'] = sub.detected
+    df_ts = extract_features(x, column_id='object_id', column_sort='mjd',
+                             column_kind='passband', column_value='flux',
+                             default_fc_parameters=tsfresh_params, n_jobs=4)
+    df_ts.index.rename('object_id', inplace=True)
+    df_ts.reset_index(drop=False, inplace=True)
+    df_ts_detected = extract_features(x.loc[(x.detected == 1)], column_id='object_id',
+                                      column_sort='mjd', column_kind='passband',
+                                      column_value='flux', default_fc_parameters=tsfresh_params,
+                                      n_jobs=4)
+    df_ts_detected.index.rename('object_id', inplace=True)
+    df_ts_detected.reset_index(drop=False, inplace=True)
+    return df_ts, df_ts_detected, x
+
+
+def get_inputs(data, metadata):
+    agg_df_ts, agg_df_ts_detected, x = make_diff_based_featurs(data)
+    for d in [0, 1]:
         for pb in range(6):
-            x = None
-            if(d==0):
-                x = data[(data.passband==pb)][['object_id','flux']].groupby(['object_id']).flux.mean().reset_index(drop=False)
+            if (d == 0):
+                x = data[(data.passband == pb)][['object_id', 'flux']].groupby(
+                    ['object_id']).flux.mean().reset_index(drop=False)
             else:
-                x = data[(data.passband==pb)&(data.detected==1)][['object_id','flux']].groupby(['object_id']).flux.mean().reset_index(drop=False)
-            x.columns = ['object_id','flux_d'+str(d)+'_pb'+str(pb)]  
-            metadata = metadata.merge(x,on='object_id',how='left')
+                x = data[(data.passband == pb) & (data.detected == 1)][
+                    ['object_id', 'flux']].groupby(['object_id']).flux.mean().reset_index(
+                    drop=False)
+            x.columns = ['object_id', 'flux_d' + str(d) + '_pb' + str(pb)]
+            metadata = metadata.merge(x, on='object_id', how='left')
             del x
             gc.collect()
-    
+    print('part 2')
     data['flux_ratio_sq'] = np.power(data['flux'] / data['flux_err'], 2.0)
     data['flux_by_flux_ratio_sq'] = data['flux'] * data['flux_ratio_sq']
     aggs = {
@@ -3907,7 +3854,7 @@ def get_inputs(data, metadata,slices=20):
         elif(c in positives):
             full_data.loc[~full_data[c].isnull(),c] = np.log1p(full_data.loc[~full_data[c].isnull(),c])
 
-    full_data.fillna(0,inplace=True)
+    full_data.fillna(0, inplace=True)
     ss = StandardScaler()
     ss.scale_ = scl
     ss.mean_ = mn
@@ -3915,11 +3862,10 @@ def get_inputs(data, metadata,slices=20):
     return full_data
 
 
-def GenerateConfusionMatrix():
-    gpI = GPSoftmax()
 
-    meta_train = pd.read_csv('../input/training_set_metadata.csv')
-    train = pd.read_csv('../input/training_set.csv')
+
+def GenerateConfusionMatrix(train, meta_train):
+    gpI = GPSoftmax()
     full_train = get_inputs(train,meta_train,20)
     del meta_train, train
     gc.collect()
@@ -3941,7 +3887,7 @@ def GenerateConfusionMatrix():
     for i,val in enumerate(unique_y):
         class_map[val] = i
             
-    y_map = np.zeros((y.shape[0],))
+    #y_map = np.zeros((y.shape[0],))
     y_map = np.array([class_map[val] for val in y])
     y_categorical = to_categorical(y_map)
 
@@ -3958,5 +3904,5 @@ def GenerateConfusionMatrix():
         # Get predicted probabilities for each class
         valpreds = gpI.GrabPredictions(x_valid).values
         oof_preds[val_, :] = valpreds
-    df = pd.DataFrame(oof_preds, index=full_train.index)
+    df = pd.DataFrame(oof_preds, index=full_train.index, columns=sample_sub.columns)
     return df

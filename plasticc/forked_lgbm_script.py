@@ -321,7 +321,7 @@ def predict_chunk(df, clfs, meta_, fnames, featurize_configs, train_mean,
                   feat_cache_path=None):
     test_feat_df = featurize(df, meta_,
                              featurize_configs['aggs'],
-                             featurize_configs['fcp'])
+                             featurize_configs['tsfresh_params'])
     test_feat_df.fillna(0, inplace=True)
     if feat_cache_path is not None:
         test_feat_df.to_msgpack(feat_cache_path)
