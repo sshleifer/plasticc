@@ -26,8 +26,14 @@ DTYPES = {
 COLUMN_TO_TYPE = DTYPES
 
 DATA_DIR = Path('/Users/shleifer/plasticc')
+DROPBOX_DATA_DIR = Path('/Users/shleifer/Dropbox/plasticc_data_shleifer/')
 if not DATA_DIR.exists():
     DATA_DIR = Path('/home/paperspace/data')
+    DROPBOX_DATA_DIR = Path('/home/paperspace/plasticc_data_shleifer/')
+
+assert DATA_DIR.exists()
+assert DROPBOX_DATA_DIR.exists()
+
 
 aggs = {
     'flux': ['min', 'max', 'mean', 'median', 'std', 'skew'],
