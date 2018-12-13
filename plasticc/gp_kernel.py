@@ -3766,13 +3766,12 @@ def make_diff_based_featurs(sub):
     x['detected'] = sub.detected
     df_ts = extract_features(x, column_id='object_id', column_sort='mjd',
                              column_kind='passband', column_value='flux',
-                             default_fc_parameters=tsfresh_params, n_jobs=4)
+                             default_fc_parameters=tsfresh_params)
     df_ts.index.rename('object_id', inplace=True)
     df_ts.reset_index(drop=False, inplace=True)
     df_ts_detected = extract_features(x.loc[(x.detected == 1)], column_id='object_id',
                                       column_sort='mjd', column_kind='passband',
-                                      column_value='flux', default_fc_parameters=tsfresh_params,
-                                      n_jobs=4)
+                                      column_value='flux', default_fc_parameters=tsfresh_params)
     df_ts_detected.index.rename('object_id', inplace=True)
     df_ts_detected.reset_index(drop=False, inplace=True)
     return df_ts, df_ts_detected, x
