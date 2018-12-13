@@ -3849,7 +3849,10 @@ def get_inputs(data, metadata):
     full_data.loc[~(full_data.hostgal_photoz>0),'distmod'] = photoztodist(full_data.loc[~(full_data.hostgal_photoz>0)])
     full_data.columns = [c.replace('"','_')for c in full_data.columns]
     for i, c in enumerate(features):
-        if(c in negatives):
+        if c not in full_data.columns:
+            print(f'missing {c}')
+            full_data[c] = np.nan
+        elif(c in negatives):
             full_data.loc[~full_data[c].isnull(),c] = np.sign(full_data.loc[~full_data[c].isnull(),c])*np.log1p(np.abs(full_data.loc[~full_data[c].isnull(),c]))
         elif(c in positives):
             full_data.loc[~full_data[c].isnull(),c] = np.log1p(full_data.loc[~full_data[c].isnull(),c])
