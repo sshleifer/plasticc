@@ -3863,9 +3863,6 @@ def get_inputs(data, metadata):
     full_data.loc[:,features] = ss.transform(full_data.loc[:,features])
     return full_data
 
-
-
-
 def GenerateConfusionMatrix(train, meta_train):
     gpI = GPSoftmax()
     full_train = get_inputs(train,meta_train,20)
