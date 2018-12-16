@@ -224,6 +224,34 @@ LGB_PARAMS = {
     'skip_drop': 0.44,
     'subsample': 0.75
 }
+RAY_CHG = [
+    #'boosting type',
+    'max_depth', 'num_leaves', 'min_child_weight',
+    'reg_alpha', 'subsample',
+]
+
+pars_to_test = [
+    {'max_depth': 6},
+    {'max_depth': 8},
+    {'num_leaves': 6},
+    {'num_leaves': 8},
+    {'min_child_weight': 80},
+    {'min_child_weight': 120},
+    {'reg_alpha': .05},
+    {'reg_alpha': .15},
+    {'subsample': .9},
+    {'subsample': .6},
+]
+# 'skip_drop', 'drop_rate',
+# changeable lgbm params
+# n_splits
+# max_depth
+# subsample freq
+# subsample for bin
+# max_cat_to_onehot:
+# min data per group
+# cat l2
+
 FAST_PARAMS = LGB_PARAMS.copy()
 FAST_PARAMS['n_estimators'] = 3
 DART_PARAMS = LGB_PARAMS.copy()

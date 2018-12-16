@@ -165,6 +165,26 @@ def GenUnknown(preds_df):
     return (0.5 + 0.5 * data["mymedian"] + 0.25 * data["mymean"] - 0.5 * data["mymax"] ** 3) / 2
 
 
+
+def GenUnknown2(preds_df):
+    feats = classes
+    data = pd.DataFrame()
+    data['mymean'] = preds_df[feats].mean(axis=1)
+    data['mymedian'] = preds_df[feats].median(axis=1)
+    data['mymax'] = preds_df[feats].max(axis=1)
+    return (0.5 + 0.5 * data["mymedian"] + 0.25 * data["mymean"] - 0.6 * data["mymax"] ** 3) / 2
+
+
+def GenUnknown3(preds_df, mn_coef, powerthang=3):
+    feats = classes
+    data = pd.DataFrame()
+    data['mymean'] = preds_df[feats].mean(axis=1)
+    data['mymedian'] = preds_df[feats].median(axis=1)
+    data['mymax'] = preds_df[feats].max(axis=1)
+    return (0.5 + 0.5 * data["mymedian"] + 0.25 * data["mymean"] - mn_coef * data["mymax"] ** powerthang) / 2
+
+
+
 def msg_pack_to_csv(path):
     base, _ = os.path.splitext(path)
     new_path = f'{base}.csv'
