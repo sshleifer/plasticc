@@ -224,11 +224,6 @@ def lgbm_modeling_cross_validation(params, full_train, y, classes=CLASSES,
     folds = StratifiedKFold(n_splits=nr_fold,
                             shuffle=True,
                             random_state=random_state)
-    if (pd.Series(params) == pd.Series(LGB_PARAMS)).all():
-        print('Identical params!')
-        print(params)
-    else:
-        print('different params')
     oof_preds = np.zeros((len(full_train), np.unique(y).shape[0]))
     if standard_scaler:
         scl = StandardScaler()

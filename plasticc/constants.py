@@ -222,7 +222,7 @@ LGB_PARAMS = {
     'reg_alpha': 0.1,
     'reg_lambda': 0.00023,
     'skip_drop': 0.44,
-    'subsample': 0.75
+    'subsample': 0.6,
 }
 RAY_CHG = [
     #'boosting type',

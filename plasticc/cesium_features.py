@@ -59,7 +59,8 @@ def get_freq_features(N, train_series, times_list, flux_list, train_metadata,
                         'percent_beyond_1_std',
                         'percent_difference_flux_percentile'
                         ],
-        scheduler=None
+        scheduler=None,
+
     )
     subset = train_series[train_series['object_id'].isin(
         train_metadata['object_id'].iloc[subsetting_pos].iloc[:N])]

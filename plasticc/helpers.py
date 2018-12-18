@@ -14,6 +14,16 @@ from tsfresh import extract_features
 from .constants import *
 
 
+def spread_feat(train):
+    aggd = train.groupby((OID, 'mjd_int', 'passband'))[['flux']].mean().reset_index()
+    time_slice_stats = aggd.groupby((OID, 'mjd_int'))[['flux']].agg(BASE_AGGS)
+    return (time_slice_stats.groupby(OID).agg(['mean', 'median', 'std'])['flux']
+            .pipe(flatten_cols).add_prefix('xsection_'))
+
+
+
+
+
 def settings_from_cols(cols):
     return tsfresh.feature_extraction.settings.from_columns(cols)
 
